@@ -3,6 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
+import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi"; // Icons imported
 
 const Signup = () => {
   const { signupUser } = useContext(AuthContext);
@@ -14,13 +15,24 @@ const Signup = () => {
     password: "",
   });
 
+  // New States for UI UX
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    signupUser(form, navigate, toast);
+    setLoading(true); // Start Loading
+    try {
+      await signupUser(form, navigate, toast);
+    } catch (error) {
+      console.error("Signup failed", error);
+    } finally {
+      setLoading(false); // Stop Loading
+    }
   };
 
   return (
@@ -37,9 +49,7 @@ const Signup = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="w-full max-w-md p-8 rounded-2xl backdrop-blur-lg bg-white/10 border border-white/20 shadow-xl"
-        style={{
-          boxShadow: "0 8px 32px 0 rgba(191, 6, 3, 0.2)"
-        }}
+        style={{ boxShadow: "0 8px 32px 0 rgba(191, 6, 3, 0.2)" }}
       >
         <motion.h2 
           initial={{ opacity: 0 }}
@@ -60,10 +70,10 @@ const Signup = () => {
             <input
               type="text"
               name="name"
-              placeholder="Your name"
+              placeholder="Username" 
               value={form.name}
               onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-#f4d58d placeholder-white/70 text-white"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white"
               required
             />
           </motion.div>
@@ -79,7 +89,7 @@ const Signup = () => {
               placeholder="Email address"
               value={form.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-#f4d58d placeholder-white/70 text-white"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white"
               required
             />
           </motion.div>
@@ -88,30 +98,47 @@ const Signup = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
+            className="relative" // Relative for positioning icon
           >
             <input
-              type="password"
+              type={showPassword ? "text" : "password"} // Toggle type
               name="password"
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-#f4d58d placeholder-white/70 text-white"
+              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white pr-10"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-[#f4d58d]"
+            >
+              {showPassword ? <FiEyeOff /> : <FiEye />}
+            </button>
           </motion.div>
           
           <motion.button
             whileHover={{ scale: 1.02, backgroundColor: "#8d0801" }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full py-3 rounded-lg font-semibold transition-all duration-300"
+            disabled={loading} // Disable while loading
+            className="w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             style={{
               backgroundColor: "#bf0603",
               color: "#f2e8cf",
-              boxShadow: "0 4px 14px 0 rgba(191, 6, 3, 0.4)"
+              boxShadow: "0 4px 14px 0 rgba(191, 6, 3, 0.4)",
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? "not-allowed" : "pointer"
             }}
           >
-            Create Account
+            {loading ? (
+              <>
+                <FiLoader className="animate-spin" /> Creating Account...
+              </>
+            ) : (
+              "Create Account"
+            )}
           </motion.button>
         </form>
 

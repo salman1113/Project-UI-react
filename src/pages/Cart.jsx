@@ -19,7 +19,7 @@ const Cart = () => {
   const navigate = useNavigate();
 
   const handleClearCart = (e) => {
-    e.preventDefault(); // Prevent default behavior
+    e.preventDefault(); 
     clearCart();
     toast.success(
       <div className="flex items-center text-[#f4d58d]">
@@ -29,27 +29,27 @@ const Cart = () => {
   };
 
   const handleContinueShopping = (e) => {
-    e.preventDefault(); // Prevent default behavior
+    e.preventDefault(); 
     navigate("/products");
   };
 
   const handleCheckout = (e) => {
-    e.preventDefault(); // Prevent default behavior
+    e.preventDefault();
     navigate("/checkout");
   };
 
   const handleDecrement = (e, id) => {
-    e.preventDefault(); // Prevent default behavior
+    e.preventDefault();
     decrementQty(id);
   };
 
   const handleIncrement = (e, id) => {
-    e.preventDefault(); // Prevent default behavior
+    e.preventDefault();
     incrementQty(id);
   };
 
   const handleRemove = (e, id) => {
-    e.preventDefault(); // Prevent default behavior
+    e.preventDefault();
     removeFromCart(id);
   };
 
@@ -68,7 +68,7 @@ const Cart = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className=" mx-auto px-4 py-12 bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] min-h-screen"
+      className="mx-auto px-4 py-12 bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] min-h-screen"
     >
       <div className="max-w-4xl mx-auto">
         <motion.h2
@@ -92,7 +92,7 @@ const Cart = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={(e) => {
-                  e.preventDefault(); // Prevent default behavior
+                  e.preventDefault();
                   navigate("/");
                 }}
                 className="bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] px-6 py-3 rounded-lg font-medium shadow-lg"
@@ -120,7 +120,8 @@ const Cart = () => {
                   <div className="flex items-center gap-4 w-full sm:w-2/3">
                     <motion.img
                       whileHover={{ scale: 1.05 }}
-                      src={item.images?.[0] || item.image || '/default-product.png'}
+                      // Updated Image handling for Django Arrays
+                      src={item.images && item.images.length > 0 ? item.images[0] : '/default-product.png'}
                       alt={item.name}
                       className="w-20 h-20 object-cover rounded-lg"
                       onError={(e) => {
@@ -132,9 +133,10 @@ const Cart = () => {
                       <p className="font-semibold text-[#f2e8cf]">{item.name}</p>
                       <p className="text-[#708d81] text-sm">{item.category}</p>
                       <p className="font-bold text-[#f4d58d]">
-                        ₹{(item.price * item.quantity).toLocaleString()}
+                        ₹{(Number(item.price) * item.quantity).toLocaleString()}
                         {item.quantity > 1 && (
                           <span className="text-[#708d81] text-sm font-normal ml-2">
+                             (₹{Number(item.price).toLocaleString()} each)
                           </span>
                         )}
                       </p>

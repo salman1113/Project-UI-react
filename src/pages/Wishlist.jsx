@@ -4,13 +4,12 @@ import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { motion } from "framer-motion";
 
 const Wishlist = () => {
   const { user, isLoading } = useContext(AuthContext);
-  const { wishlist, setWishlist, removeFromWishlist } = useContext(WishlistContext);
-  const {setCart } = useContext(CartContext);
+  const { wishlist, removeFromWishlist } = useContext(WishlistContext);
+  const { addToCart } = useContext(CartContext); 
   const navigate = useNavigate();
 
   const colors = {
@@ -30,33 +29,11 @@ const Wishlist = () => {
       return;
     }
 
-    try {
-      const res = await axios.get(`http://localhost:5000/users/${user.id}`);
-      const currentCart = res.data.cart || [];
-      const currentWishlist = res.data.wishlist || [];
-
-      const alreadyInCart = currentCart.find((item) => item.id === product.id);
-      if (alreadyInCart) {
-        toast.info("Item already in cart");
-        return;
-      }
-
-      const updatedCart = [...currentCart, { ...product, quantity: 1 }];
-      const updatedWishlist = currentWishlist.filter((item) => item.id !== product.id);
-
-      await axios.patch(`http://localhost:5000/users/${user.id}`, {
-        cart: updatedCart,
-        wishlist: updatedWishlist,
-      });
-
-      setCart(updatedCart);
-      setWishlist(updatedWishlist);
-
-      toast.success("Moved to cart");
-    } catch (err) {
-      console.error("Failed to move to cart", err);
-      toast.error("Something went wrong");
-    }
+    // 1. Add to Cart (Context handles API and state)
+    await addToCart(product);
+    
+    // 2. Remove from Wishlist (Context handles API and state)
+    await removeFromWishlist(product.id);
   };
 
   if (isLoading) {
@@ -134,16 +111,26 @@ const Wishlist = () => {
                   backdropFilter: 'blur(10px)'
                 }}
               >
+                {/* --- IMAGE FIX --- */}
                 <motion.img
-                  src={product.images[0]}
+                  src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.png'}
                   alt={product.name}
-                  className=" object-cover rounded mb-3"
+                  className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden"
                   whileHover={{ scale: 1.05 }}
                   style={{ border: `1px solid ${colors.secondary}` }}
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/default-product.png";
+                  }}
                 />
+                
                 <h3 className="text-lg font-semibold">{product.name}</h3>
                 <p style={{ color: colors.secondary }}>{product.category}</p>
-                <p className="font-bold mb-3" style={{ color: colors.highlight }}>₹{product.price}</p>
+                
+                {/* --- PRICE FIX (Convert String to Number) --- */}
+                <p className="font-bold mb-3" style={{ color: colors.highlight }}>
+                  ₹{Number(product.price).toLocaleString('en-IN')}
+                </p>
 
                 <div className="flex gap-3">
                   <motion.button

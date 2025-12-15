@@ -1,26 +1,55 @@
 import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
+import { AuthContext, useAxios } from "../context/AuthContext"; 
 import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiPackage, FiCheckCircle, FiTruck, FiClock } from "react-icons/fi";
+import { FiPackage, FiCheckCircle, FiTruck, FiClock, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const Orders = () => {
   const { user } = useContext(AuthContext);
+  const api = useAxios(); 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Pagination State
+  const [nextPage, setNextPage] = useState(null);
+  const [prevPage, setPrevPage] = useState(null);
+  const [currentUrl, setCurrentUrl] = useState("/orders/"); // Start with default URL
+
   const navigate = useNavigate();
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (url) => {
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:5000/users/${user.id}`);
-      const ordersData = res.data.orders || [];
-      setOrders(ordersData.map(order => ({
-        ...order,
-        trackingNumber: `TRK${Math.floor(100000 + Math.random() * 900000)}`
-      })));
+      const res = await api.get(url);
+      
+      // Django Pagination Response: { count: 10, next: "...", previous: "...", results: [...] }
+      const data = res.data;
+      const ordersData = data.results || []; // Get the array from 'results'
+      
+      setNextPage(data.next);
+      setPrevPage(data.previous);
+
+      const transformedOrders = ordersData.map(order => ({
+        id: order.id,
+        trackingNumber: `TRK${order.id}${Math.floor(1000 + Math.random() * 9000)}`,
+        status: order.status,
+        date: order.created_at,
+        total: order.total_amount,
+        shipping: order.shipping_details, 
+        paymentMethod: order.payment_method,
+        items: order.items.map(item => ({
+          name: item.product.name,
+          category: item.product.category,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.product.images && item.product.images.length > 0 
+                 ? item.product.images[0] 
+                 : "/placeholder.jpg"
+        }))
+      }));
+
+      setOrders(transformedOrders);
     } catch (err) {
       toast.error(
         <div className="flex items-center text-[#f2e8cf]">
@@ -44,60 +73,72 @@ const Orders = () => {
       return;
     }
 
-    fetchOrders();
-  }, [user, navigate]);
+    fetchOrders(currentUrl);
+  }, [user, navigate, api, currentUrl]); 
 
-
-const getStatusColor = (status) => {
-  switch (status.toLowerCase()) {
-    case "pending":
-      return "bg-yellow-200 text-yellow-800"; 
-    case "processing":
-      return "bg-[#f4d58d] text-[#001427]"; 
-    case "shipped":
-      return "bg-[#6a994e] text-[#f2e8cf]"; 
-    case "delivered":
-      return "bg-[#386641] text-[#f2e8cf]"; 
-    case "cancelled":
-      return "bg-red-500 text-white"; 
-    case "returned":
-      return "bg-blue-500 text-white"; 
-    default:
-      return "bg-gray-300 text-black"; 
-  }
-};
-
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "Processing":
-        return <FiClock className="mr-2" />;
-      case "Shipped":
-        return <FiPackage className="mr-2" />;
-      case "In Transit":
-        return <FiTruck className="mr-2" />;
-      case "Delivered":
-        return <FiCheckCircle className="mr-2" />;
-      default:
-        return null;
+  // Pagination Handlers
+  const handleNext = () => {
+    if (nextPage) {
+        // Extract relative path from full URL provided by Django
+        const url = new URL(nextPage);
+        setCurrentUrl(url.pathname + url.search);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  if (loading) {
+  const handlePrev = () => {
+    if (prevPage) {
+        const url = new URL(prevPage);
+        setCurrentUrl(url.pathname + url.search);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+      case "processing":
+        return "bg-[#f4d58d] text-[#001427]";
+      case "shipped":
+        return "bg-[#6a994e] text-[#f2e8cf]";
+      case "delivered":
+        return "bg-[#386641] text-[#f2e8cf]";
+      case "cancelled":
+        return "bg-[#bf0603] text-white";
+      default:
+        return "bg-gray-300 text-black";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+      case "processing":
+        return <FiClock className="mr-2" />;
+      case "shipped":
+        return <FiTruck className="mr-2" />;
+      case "delivered":
+        return <FiCheckCircle className="mr-2" />;
+      default:
+        return <FiPackage className="mr-2" />;
+    }
+  };
+
+  if (loading && orders.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
+      <div className="flex justify-center items-center min-h-[50vh] bg-[#001427]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#bf0603]"></div>
       </div>
     );
   }
 
   return (
-    <div className=" mx-auto px-4 py-12 bg-[#001427] min-h-screen">
+    <div className="mx-auto px-4 py-12 bg-[#001427] min-h-screen">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-10 flex justify-between items-center"
+        className="mb-10 flex justify-between items-center max-w-5xl mx-auto"
       >
         <div>
           <h2 className="text-3xl font-bold text-[#f4d58d] mb-2">Order History</h2>
@@ -105,11 +146,11 @@ const getStatusColor = (status) => {
         </div>
       </motion.div>
 
-      {orders.length === 0 ? (
+      {orders.length === 0 && !loading ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-20"
+          className="text-center py-20 max-w-5xl mx-auto"
         >
           <div className="inline-block p-6 bg-[#001c3d] rounded-full mb-6">
             <FiPackage className="h-12 w-12 text-[#708d81]" />
@@ -131,13 +172,11 @@ const getStatusColor = (status) => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="space-y-8"
+          className="space-y-8 max-w-5xl mx-auto"
         >
-          {orders
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .map((order, index) => (
+          {orders.map((order, index) => (
               <motion.div
-                key={index}
+                key={order.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -161,12 +200,12 @@ const getStatusColor = (status) => {
                     </div>
                     <div className="flex items-center">
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                        className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${getStatusColor(
                           order.status
                         )}`}
                       >
                         {getStatusIcon(order.status)}
-                        {order.status}
+                        <span className="capitalize">{order.status}</span>
                       </span>
                     </div>
                   </div>
@@ -179,11 +218,7 @@ const getStatusColor = (status) => {
                       >
                         <div className="flex-shrink-0 w-24 h-24 bg-[#001427] rounded overflow-hidden border border-[#708d81]/30">
                           <img
-                            src={
-                              item.image ||
-                              item.images?.[0] ||
-                              "/placeholder.jpg"
-                            }
+                            src={item.image}
                             alt={item.name || "Product"}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -200,18 +235,16 @@ const getStatusColor = (status) => {
                             {item.category}
                           </p>
                           <p className="text-[#f4d58d] font-bold mt-1">
-                            ₹{item.price ? item.price.toLocaleString("en-IN") : "0.00"}
+                            ₹{Number(item.price).toLocaleString("en-IN")}
                           </p>
                           <p className="text-[#708d81] text-sm">
-                            Quantity: {item.quantity || 1}
+                            Quantity: {item.quantity}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="text-[#f2e8cf]">
                             ₹
-                            {item.price && item.quantity
-                              ? (item.price * item.quantity).toLocaleString("en-IN")
-                              : "0.00"}
+                            {(Number(item.price) * item.quantity).toLocaleString("en-IN")}
                           </p>
                         </div>
                       </div>
@@ -219,7 +252,7 @@ const getStatusColor = (status) => {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-[#708d81]/20">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
                       <div>
                         <h5 className="text-sm font-medium text-[#708d81] mb-1">
                           Shipping Address
@@ -241,13 +274,8 @@ const getStatusColor = (status) => {
                         <h5 className="text-sm font-medium text-[#708d81] mb-1">
                           Order Total
                         </h5>
-                        <p className="text-xl font-bold text-[#f4d58d]">
-                          ₹{order.total ? order.total.toLocaleString("en-IN") : "0.00"}
-                          {order.paymentMethod === "cod" && (
-                            <span className="text-sm text-[#708d81] ml-2">
-                              (includes ₹50 COD charge)
-                            </span>
-                          )}
+                        <p className="text-2xl font-bold text-[#f4d58d]">
+                          ₹{Number(order.total).toLocaleString("en-IN")}
                         </p>
                       </div>
                     </div>
@@ -255,6 +283,27 @@ const getStatusColor = (status) => {
                 </div>
               </motion.div>
             ))}
+          
+          {/* Pagination Controls */}
+          {(prevPage || nextPage) && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+                <button 
+                    onClick={handlePrev} 
+                    disabled={!prevPage}
+                    className={`flex items-center px-4 py-2 rounded-lg border ${!prevPage ? 'border-gray-600 text-gray-600 cursor-not-allowed' : 'border-[#bf0603] text-[#f2e8cf] hover:bg-[#bf0603]'}`}
+                >
+                    <FiChevronLeft className="mr-2" /> Previous
+                </button>
+                <button 
+                    onClick={handleNext} 
+                    disabled={!nextPage}
+                    className={`flex items-center px-4 py-2 rounded-lg border ${!nextPage ? 'border-gray-600 text-gray-600 cursor-not-allowed' : 'border-[#bf0603] text-[#f2e8cf] hover:bg-[#bf0603]'}`}
+                >
+                    Next <FiChevronRight className="ml-2" />
+                </button>
+            </div>
+          )}
+
         </motion.div>
       )}
     </div>

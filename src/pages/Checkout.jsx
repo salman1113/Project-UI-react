@@ -1,28 +1,31 @@
 import { useContext, useEffect, useState } from "react";
 import { CartContext } from "../context/CartContext";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext, useAxios } from "../context/AuthContext"; // Use authenticated axios
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import axios from "axios";
 import { motion } from "framer-motion";
 import { FaCreditCard, FaMoneyBillWave } from "react-icons/fa";
 
 const Checkout = () => {
   const { user } = useContext(AuthContext);
   const { cart, clearCart, totalPrice } = useContext(CartContext);
+  const api = useAxios(); // Authenticated API instance
   const [paymentMethod, setPaymentMethod] = useState("card");
+  
   const [paymentInfo, setPaymentInfo] = useState({
     cardNumber: "",
     expiry: "",
     cvv: "",
     nameOnCard: "",
   });
+  
   const [shippingInfo, setShippingInfo] = useState({
     address: "",
     city: "",
     state: "",
     zip: "",
   });
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -77,11 +80,7 @@ const Checkout = () => {
         !paymentInfo.cvv ||
         !paymentInfo.nameOnCard
       ) {
-        toast.warn(
-          <div className="flex items-center text-[#f4d58d]">
-            <span className="mr-2">⚠️</span> Please fill all payment fields
-          </div>
-        );
+        toast.warn("Please fill all payment fields");
         return;
       }
     }
@@ -92,36 +91,32 @@ const Checkout = () => {
       !shippingInfo.state ||
       !shippingInfo.zip
     ) {
-      toast.warn(
-        <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">⚠️</span> Please fill all shipping fields
-        </div>
-      );
+      toast.warn("Please fill all shipping fields");
       return;
     }
 
     setLoading(true);
-    try {
-      const res = await axios.get(`http://localhost:5000/users/${user.id}`);
-      const existingUser = res.data;
-      const updatedOrders = [
-        ...(existingUser.orders || []),
-        {
-          items: [...cart],
-          total: totalPrice,
-          date: new Date().toISOString(),
-          status: "processing",
-          shipping: shippingInfo,
-          paymentMethod,
-        },
-      ];
+    
+    // Calculate final total (including COD fee if applicable)
+    const finalTotal = paymentMethod === "cod" ? totalPrice + 50 : totalPrice;
 
-      await axios.patch(`http://localhost:5000/users/${user.id}`, {
-        orders: updatedOrders,
-        cart: [],
+    try {
+      // --- UPDATED API CALL ---
+      // We send the order details to the new Django endpoint.
+      // The backend will automatically:
+      // 1. Create the Order
+      // 2. Move items from Cart to OrderItems
+      // 3. Empty the Cart on the server side
+      await api.post("/orders/", {
+        total: finalTotal,
+        shipping: shippingInfo,
+        payment_method: paymentMethod, // Matches Django field name
+        status: "processing"
       });
 
-      clearCart();
+      // Clear Frontend Cart State
+      clearCart(); // This just clears the UI state now
+      
       toast.success(
         <div className="flex items-center text-[#f4d58d]">
           <span className="mr-2">✓</span> Order placed successfully!
@@ -131,10 +126,10 @@ const Checkout = () => {
     } catch (err) {
       toast.error(
         <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">⚠️</span> Something went wrong!
+          <span className="mr-2">⚠️</span> Order failed. Please try again.
         </div>
       );
-      console.error(err);
+      console.error("Checkout Error:", err);
     } finally {
       setLoading(false);
     }
@@ -207,6 +202,7 @@ const Checkout = () => {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left Column: Order Summary (Visual Only) */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -224,7 +220,8 @@ const Checkout = () => {
                   >
                     <motion.img
                       whileHover={{ scale: 1.05 }}
-                      src={item.images?.[0] || item.image || "/default-product.png"}
+                      // Updated Image handling for arrays
+                      src={item.images && item.images.length > 0 ? item.images[0] : "/default-product.png"}
                       alt={item.name}
                       className="w-16 h-16 object-cover rounded-lg"
                       onError={(e) => {
@@ -240,7 +237,7 @@ const Checkout = () => {
                       </p>
                     </div>
                     <p className="font-bold text-[#f4d58d]">
-                      ₹{(item.price * item.quantity).toLocaleString()}
+                      ₹{(Number(item.price) * item.quantity).toLocaleString()}
                     </p>
                   </motion.div>
                 ))}
@@ -256,6 +253,7 @@ const Checkout = () => {
               </div>
             </motion.div>
 
+            {/* Right Column: Steps */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}

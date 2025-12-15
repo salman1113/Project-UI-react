@@ -6,6 +6,7 @@ import 'swiper/css/effect-fade';
 import CountUp from 'react-countup';
 import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import axios from 'axios'; // Import axios
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
@@ -15,13 +16,24 @@ const FeaturedProducts = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('http://localhost:5000/products');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+        const response = await axios.get('http://localhost:8000/api/products/');
+        
+        let data = response.data;
+
+        // 1. Check for Pagination (DRF returns data in 'results')
+        if (data.results) {
+            data = data.results;
         }
-        const data = await response.json();
-        setProducts(data);
+
+        // 2. Filter Active Products (Use 'is_active' instead of 'isActive')
+        // Note: If your backend filters this automatically, you can remove this filter.
+        const activeProducts = Array.isArray(data) 
+            ? data.filter(p => p.is_active !== false) 
+            : [];
+            
+        setProducts(activeProducts);
       } catch (err) {
+        console.error("Fetch error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -47,6 +59,15 @@ const FeaturedProducts = () => {
     );
   }
 
+  // If no products found
+  if (products.length === 0) {
+    return (
+        <div className="text-center text-gray-400 py-8">
+            <p>No featured products available at the moment.</p>
+        </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
       {products.slice(0, 4).map((product) => (
@@ -59,23 +80,28 @@ const FeaturedProducts = () => {
           whileHover={{ y: -5 }}
           className="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
         >
-          <Link to={`/product/${product.id}`} className="block">
-            <div className="relative pb-[100%]">
+          <Link to={`/product/${product.id}`} className="block h-full flex flex-col">
+            <div className="relative pb-[100%] bg-gray-700">
               <img
-                src={product.images || "https://via.placeholder.com/400"}
+                // 3. FIXED IMAGE HANDLING (Checks for 'image' or 'images')
+                src={product.image || (product.images && product.images[0]) || "https://via.placeholder.com/400"}
                 alt={product.name}
                 className="absolute top-0 left-0 w-full h-full object-cover"
                 loading="lazy"
+                onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src="https://via.placeholder.com/400?text=No+Image"
+                }}
               />
             </div>
-            <div className="p-4 sm:p-6">
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">{product.name}</h3>
-              <p className="text-gray-300 text-sm sm:text-base mb-3 line-clamp-2">
+            <div className="p-4 sm:p-6 flex flex-col flex-grow">
+              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 truncate">{product.name}</h3>
+              <p className="text-gray-300 text-sm sm:text-base mb-3 line-clamp-2 flex-grow">
                 {product.description}
               </p>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mt-auto">
                 <span className="text-[#E2E2B6] font-bold text-lg sm:text-xl">
-                  ₹ {product.price}
+                  ₹ {Number(product.price).toLocaleString()}
                 </span>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -95,6 +121,7 @@ const FeaturedProducts = () => {
 
 const Home = () => {
   const swiperRef = useRef(null);
+  // ... (Logos and Slides arrays remain unchanged)
   const logos = [
     "https://cdn.shopify.com/s/files/1/0548/8849/7221/files/logo_white_text_blue.png",
     "https://cdn.shopify.com/s/files/1/0548/8849/7221/files/logo_white_text_blue.png",
@@ -171,7 +198,7 @@ const Home = () => {
   };
 
   return (
-    <div className="mx-auto bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617]sm">
+    <div className="mx-auto bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] sm">
       <motion.section
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

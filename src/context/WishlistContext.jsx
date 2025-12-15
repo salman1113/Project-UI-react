@@ -1,90 +1,116 @@
-import { createContext, useEffect, useState } from "react";
-import axios from "axios";
+import { createContext, useEffect, useState, useContext, useCallback } from "react";
+import { AuthContext, useAxios } from "./AuthContext";
+import { toast } from "react-toastify";
 
 export const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
+  const { user } = useContext(AuthContext);
+  const api = useAxios(); 
   const [wishlist, setWishlist] = useState([]);
-  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser);
-  }, []);
-
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      if (!user) {
-        setWishlist([]); 
-        return;
-      }
-      try {
-        const res = await axios.get(`http://localhost:5000/users/${user.id}`);
-        setWishlist(res.data.wishlist || []);
-      } catch (err) {
-        console.error("Failed to fetch wishlist", err);
-      }
-    };
-
-    fetchWishlist();
-  }, [user]);
-
-  const addToWishlist = async (product, event) => {
-    // Prevent default behavior to avoid page refresh
-    if (event && event.preventDefault) {
-      event.preventDefault();
+  // --- FETCH WISHLIST ---
+  const fetchWishlist = useCallback(async () => {
+    if (!user) {
+      setWishlist([]);
+      return;
     }
-    
-    if (!user) return;
     try {
-      const res = await axios.get(`http://localhost:5000/users/${user.id}`);
-      const currentWishlist = res.data.wishlist || [];
+      const res = await api.get("/wishlist/");
+      
+      // Transform: Bind relationship ID (id) to product details
+      const formattedWishlist = res.data.map(item => ({
+          ...item.product,
+          wishlist_item_id: item.id // This ID is needed to delete
+      }));
 
-      const exists = currentWishlist.find((item) => item.id === product.id);
-      if (exists) return;
+      setWishlist(formattedWishlist);
+    } catch (err) {
+      console.error("Failed to fetch wishlist", err);
+      if (err.response?.status === 401) setWishlist([]);
+    }
+  }, [user, api]);
 
-      const updatedWishlist = [...currentWishlist, product];
-      await axios.patch(`http://localhost:5000/users/${user.id}`, {
-        wishlist: updatedWishlist,
+  // Initial Load
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
+
+  // --- ADD TO WISHLIST ---
+  const addToWishlist = async (product, event) => {
+    if (event?.preventDefault) event.preventDefault();
+
+    if (!user) {
+        toast.warn("Please login first");
+        return;
+    }
+
+    // Check locally to prevent duplicate calls
+    if (wishlist.some(item => item.id === product.id)) {
+        toast.info("Already in wishlist");
+        return;
+    }
+
+    try {
+      setWishlist(prev => [...prev, product]); // Optimistic Update
+      
+      await api.post("/wishlist/", {
+        product_id: product.id
       });
-      setWishlist(updatedWishlist);
+      
+      toast.success("Added to wishlist");
+      // IMPORTANT: Refresh to get the real 'wishlist_item_id' for subsequent deletion
+      await fetchWishlist(); 
+
     } catch (err) {
       console.error("Failed to add to wishlist", err);
+      toast.error("Failed to add");
+      fetchWishlist(); // Revert on error
     }
   };
 
-  const removeFromWishlist = async (id, event) => {
-    // Prevent default behavior to avoid page refresh
-    if (event && event.preventDefault) {
-      event.preventDefault();
-    }
+  // --- REMOVE FROM WISHLIST ---
+  const removeFromWishlist = async (productId, event) => {
+    if (event?.preventDefault) event.preventDefault();
+
+    const itemToRemove = wishlist.find(item => item.id === productId);
     
-    if (!user) return;
+    // If we don't have the relationship ID (rare case if sync is fast), verify data
+    if (!itemToRemove?.wishlist_item_id) {
+        console.warn("Missing wishlist_item_id, refreshing...");
+        await fetchWishlist(); 
+        return;
+    }
+
     try {
-      const updatedWishlist = wishlist.filter((item) => item.id !== id);
-      await axios.patch(`http://localhost:5000/users/${user.id}`, {
-        wishlist: updatedWishlist,
-      });
-      setWishlist(updatedWishlist);
+      setWishlist(prev => prev.filter(item => item.id !== productId)); // Optimistic
+
+      await api.delete(`/wishlist/${itemToRemove.wishlist_item_id}/`);
+      toast.success("Removed from wishlist");
     } catch (err) {
       console.error("Failed to remove from wishlist", err);
+      toast.error("Failed to remove");
+      fetchWishlist(); // Revert
     }
   };
 
+  // --- CLEAR WISHLIST (Fixed to delete from Server) ---
   const clearWishlist = async (event) => {
-    // Prevent default behavior to avoid page refresh
-    if (event && event.preventDefault) {
-      event.preventDefault();
-    }
+    if (event?.preventDefault) event.preventDefault();
     
-    if (!user) return;
+    const previousList = [...wishlist];
+    setWishlist([]); // Clear UI
+
     try {
-      await axios.patch(`http://localhost:5000/users/${user.id}`, {
-        wishlist: [],
-      });
-      setWishlist([]);
+        const deletePromises = previousList.map(item => 
+            item.wishlist_item_id ? api.delete(`/wishlist/${item.wishlist_item_id}/`) : Promise.resolve()
+        );
+        
+        await Promise.all(deletePromises);
+        toast.success("Wishlist cleared");
     } catch (err) {
-      console.error("Failed to clear wishlist", err);
+        console.error("Failed to clear wishlist", err);
+        setWishlist(previousList); // Revert
     }
   };
 
