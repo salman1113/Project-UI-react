@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect, useRef } from "react";
+import { useContext, useState, useEffect, useRef, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { CartContext } from "../context/CartContext";
@@ -13,27 +13,85 @@ import {
   FiX, 
   FiSettings, 
   FiLogOut, 
-  FiBox 
+  FiBox,
+  FiChevronRight,
+  FiLoader
 } from "react-icons/fi";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // State hooks
+  // --- STATE HOOKS ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const [activePage, setActivePage] = useState("");
   
-  // Refs
+  // Product Data States
+  const [products, setProducts] = useState([]); 
+  const [isLoading, setIsLoading] = useState(false);
+
+  // --- REFS ---
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
   
-  // Contexts
+  // --- CONTEXTS ---
   const authContext = useContext(AuthContext);
   const cartContext = useContext(CartContext);
   const wishlistContext = useContext(WishlistContext);
+
+  // --- 🌟 ROBUST API FETCHING 🌟 ---
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("http://localhost:8000/api/products/");
+        
+        if (!response.ok) {
+           throw new Error("Network response was not ok");
+        }
+
+        const data = await response.json();
+
+        // Handle various API response structures
+        if (Array.isArray(data)) {
+            setProducts(data);
+        } else if (data.results && Array.isArray(data.results)) {
+            // Django Rest Framework pagination format
+            setProducts(data.results);
+        } else if (data.products && Array.isArray(data.products)) {
+            setProducts(data.products);
+        } else {
+            setProducts([]);
+        }
+      } catch (error) {
+        // Optional: Set dummy data here if you want to test UI without backend
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []); 
   
+  // --- DATA PROCESSING ---
+  const categories = useMemo(() => {
+    if (!products.length) return [];
+    // Extract unique categories safely
+    const cats = products.map(item => item.category).filter(Boolean);
+    return [...new Set(cats)];
+  }, [products]);
+
+  const featuredProducts = useMemo(() => {
+    if (!products.length) return [];
+    // Sort by count/popularity if available, else just take first 3
+    return [...products]
+        .sort((a, b) => (b.count || 0) - (a.count || 0))
+        .slice(0, 3);
+  }, [products]);
+
+  // Context Checks
   if (!authContext || !cartContext || !wishlistContext) return null;
   
   const { user, logoutUser } = authContext;
@@ -43,18 +101,13 @@ const Navbar = () => {
   const cartCount = cart?.length || 0;
   const wishlistCount = wishlist?.length || 0;
 
-  // --- 🌟 PROFILE IMAGE LOGIC 🌟 ---
-  // 1. Get Name: Use 'name' if available, otherwise 'username'
+  // Profile Image
   const displayName = user?.name || user?.username || "User";
-  
-  // 2. Generate Image URL:
-  // - If user has a Google image (user.image), show it.
-  // - Else, generate an avatar using the first letter of their name.
   const userImage = user?.image 
     ? user.image 
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=f4d58d&color=001427&bold=true&length=1`;
 
-  // Close dropdowns on click outside
+  // Click Outside Listener
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -87,18 +140,104 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#001427] text-[#708d81] py-4 px-6 relative border-b border-[#708d81]/20">
+    <nav className="bg-[#001427] text-[#708d81] py-4 px-6 relative border-b border-[#708d81]/20 z-50">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
         
         {/* LOGO */}
-        <Link to="/" className="text-[#f4d58d] font-bold text-xl tracking-wide" onClick={() => setActivePage("/")}>
+        <Link to="/" className="text-[#f4d58d] font-bold text-xl tracking-wide z-50" onClick={() => setActivePage("/")}>
           EchoBay
         </Link>
 
         {/* DESKTOP MENU */}
-        <div className="hidden md:flex items-center space-x-6 absolute left-1/2 transform -translate-x-1/2">
+        <div className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2 h-full">
           <Link to="/" className={getNavLinkClass("/")} onClick={() => setActivePage("/")}>Home</Link>
-          <Link to="/products" className={getNavLinkClass("/products")} onClick={() => setActivePage("/products")}>Products</Link>
+          
+          {/* --- 🌟 IMPROVED DROPDOWN SECTION 🌟 --- */}
+          <div 
+            className="relative h-full flex items-center group"
+            onMouseEnter={() => setIsProductDropdownOpen(true)}
+            onMouseLeave={() => setIsProductDropdownOpen(false)}
+          >
+            {/* Added padding-bottom to bridge the gap between link and dropdown */}
+            <div className="py-4 cursor-pointer">
+                <Link 
+                    to="/products" 
+                    className={getNavLinkClass("/products")}
+                    onClick={() => setActivePage("/products")}
+                >
+                    Products
+                </Link>
+            </div>
+
+            {/* MEGA MENU DROPDOWN */}
+            {isProductDropdownOpen && (
+                <div className="absolute top-full -left-40 w-[600px] bg-[#001427] border border-[#708d81]/30 rounded-xl shadow-2xl p-6 z-[100] transition-all duration-200 ease-in-out mt-1">
+                    
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-40 text-[#f4d58d]">
+                            <FiLoader className="animate-spin text-2xl mr-2" /> Loading Products...
+                        </div>
+                    ) : products.length === 0 ? (
+                        <div className="text-center py-8 text-[#708d81]">
+                            No products found. Check API connection.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-12 gap-6">
+                            {/* LEFT COLUMN: CATEGORIES */}
+                            <div className="col-span-4 border-r border-[#708d81]/20 pr-4">
+                                <h3 className="text-[#f4d58d] font-bold mb-4 uppercase text-xs tracking-wider">Categories</h3>
+                                <ul className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                    {categories.map((cat, index) => (
+                                        <li key={index}>
+                                            <Link 
+                                                to={`/products?category=${encodeURIComponent(cat)}`} 
+                                                className="block text-sm text-[#708d81] hover:text-[#f4d58d] hover:translate-x-1 transition-all flex items-center justify-between group/item"
+                                                onClick={() => setIsProductDropdownOpen(false)}
+                                            >
+                                                {cat}
+                                                <FiChevronRight className="opacity-0 group-hover/item:opacity-100 transition-opacity text-xs" />
+                                            </Link>
+                                        </li>
+                                    ))}
+                                    <li className="mt-4 pt-2 border-t border-[#708d81]/20">
+                                        <Link to="/products" className="text-[#f4d58d] text-sm font-semibold hover:underline">View All Products</Link>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* RIGHT COLUMN: BEST SELLERS */}
+                            <div className="col-span-8 pl-2">
+                                <h3 className="text-[#f4d58d] font-bold mb-4 uppercase text-xs tracking-wider">Top Selling</h3>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {featuredProducts.map((product) => (
+                                        <Link 
+                                            key={product.id} 
+                                            to={`/products/${product.id}`}
+                                            className="group/card block bg-[#001c3d]/50 p-2 rounded-lg hover:bg-[#708d81]/10 transition-colors border border-transparent hover:border-[#708d81]/20"
+                                            onClick={() => setIsProductDropdownOpen(false)}
+                                        >
+                                            <div className="h-24 w-full bg-white rounded-md mb-2 overflow-hidden flex items-center justify-center p-1 relative">
+                                                <img 
+                                                    src={product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/150?text=No+Image"} 
+                                                    alt={product.name} 
+                                                    className="h-full w-auto object-contain group-hover/card:scale-110 transition-transform duration-300"
+                                                    onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error"; }}
+                                                />
+                                            </div>
+                                            <p className="text-white text-xs font-medium truncate" title={product.name}>{product.name}</p>
+                                            <div className="flex justify-between items-center mt-1">
+                                              <p className="text-[#f4d58d] text-xs font-bold">₹{Number(product.price).toLocaleString()}</p>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+          </div>
+
           <Link to="/about" className={getNavLinkClass("/about")} onClick={() => setActivePage("/about")}>About</Link>
         </div>
 
@@ -126,11 +265,9 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* --- USER PROFILE SECTION --- */}
+          {/* USER DROPDOWN */}
           {user ? (
             <div className="relative" ref={dropdownRef}>
-              
-              {/* 1. Circle Avatar Button */}
               <button 
                 onClick={(e) => {
                   e.preventDefault();
@@ -138,43 +275,24 @@ const Navbar = () => {
                 }}
                 className="flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#f4d58d] rounded-full p-0.5 border border-[#708d81]/50 transition-all hover:shadow-lg"
               >
-                <img 
-                  src={userImage} 
-                  alt="Profile" 
-                  className="h-9 w-9 rounded-full object-cover" 
-                />
+                <img src={userImage} alt="Profile" className="h-9 w-9 rounded-full object-cover" />
               </button>
               
-              {/* 2. Dropdown Menu (Google Style) */}
               {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-72 bg-[#001427] border border-[#708d81]/20 rounded-2xl shadow-2xl z-50 overflow-hidden text-sm">
-                  
-                  {/* User Info Header */}
                   <div className="px-6 py-5 flex flex-col items-center border-b border-[#708d81]/20 bg-[#001c3d]/50">
                     <img src={userImage} alt="User" className="h-16 w-16 rounded-full mb-3 border-2 border-[#f4d58d]" />
                     <p className="text-[#f4d58d] font-semibold text-lg">{displayName}</p>
                     <p className="text-[#708d81] text-xs mt-1">{user.email}</p>
                   </div>
-
-                  {/* Menu Links */}
                   <div className="py-2">
-                    <Link 
-                      to="/orders" 
-                      className="flex items-center px-6 py-3 text-[#708d81] hover:bg-[#708d81]/10 hover:text-[#f4d58d] transition-colors"
-                      onClick={() => { setActivePage("/orders"); setIsUserDropdownOpen(false); }}
-                    >
+                    <Link to="/orders" className="flex items-center px-6 py-3 text-[#708d81] hover:bg-[#708d81]/10 hover:text-[#f4d58d] transition-colors" onClick={() => { setActivePage("/orders"); setIsUserDropdownOpen(false); }}>
                       <FiBox className="mr-3 text-lg" /> My Orders
                     </Link>
-                    <Link 
-                      to="/settings" 
-                      className="flex items-center px-6 py-3 text-[#708d81] hover:bg-[#708d81]/10 hover:text-[#f4d58d] transition-colors"
-                      onClick={() => { setActivePage("/settings"); setIsUserDropdownOpen(false); }}
-                    >
+                    <Link to="/settings" className="flex items-center px-6 py-3 text-[#708d81] hover:bg-[#708d81]/10 hover:text-[#f4d58d] transition-colors" onClick={() => { setActivePage("/settings"); setIsUserDropdownOpen(false); }}>
                       <FiSettings className="mr-3 text-lg" /> Settings
                     </Link>
-                    
                     <div className="border-t border-[#708d81]/20 my-1"></div>
-                    
                     <button onClick={handleLogout} className="w-full flex items-center px-6 py-3 text-[#bf0603] hover:bg-[#bf0603]/10 transition-colors text-left">
                       <FiLogOut className="mr-3 text-lg" /> Logout
                     </button>
@@ -204,27 +322,25 @@ const Navbar = () => {
         <div className="md:hidden bg-[#001427] border-t border-[#708d81]/20 absolute top-full left-0 right-0 z-40 py-4 px-6 shadow-xl" ref={mobileMenuRef}>
           <div className="flex flex-col space-y-4">
             <Link to="/" className={getNavLinkClass("/")} onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
-            <Link to="/products" className={getNavLinkClass("/products")} onClick={() => setIsMobileMenuOpen(false)}>Products</Link>
-            <Link to="/about" className={getNavLinkClass("/about")} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
             
+            {/* Mobile Categories */}
+            <div className="border-l-2 border-[#f4d58d] pl-3 ml-1 space-y-2">
+                 <Link to="/products" className="text-[#f4d58d] font-bold block" onClick={() => setIsMobileMenuOpen(false)}>All Products</Link>
+                 {categories.slice(0, 4).map(cat => (
+                     <Link key={cat} to={`/products?category=${encodeURIComponent(cat)}`} className="block text-sm text-[#708d81]" onClick={() => setIsMobileMenuOpen(false)}>{cat}</Link>
+                 ))}
+            </div>
+
+            <Link to="/about" className={getNavLinkClass("/about")} onClick={() => setIsMobileMenuOpen(false)}>About</Link>
+            <div className="h-px bg-[#708d81]/20 my-2"></div>
             <Link to="/wishlist" className={getNavLinkClass("/wishlist")} onClick={() => setIsMobileMenuOpen(false)}>
               <div className="flex items-center"><FiHeart className="mr-2" /> Wishlist ({wishlistCount})</div>
             </Link>
             <Link to="/cart" className={getNavLinkClass("/cart")} onClick={() => setIsMobileMenuOpen(false)}>
               <div className="flex items-center"><FiShoppingCart className="mr-2" /> Cart ({cartCount})</div>
             </Link>
-
             {user && (
               <>
-                <div className="border-t border-[#708d81]/20 my-2 pt-2">
-                  <div className="flex items-center space-x-3 mb-3 px-2">
-                     <img src={userImage} alt="User" className="h-8 w-8 rounded-full" />
-                     <div>
-                        <p className="text-[#f4d58d] text-sm font-bold">{displayName}</p>
-                        <p className="text-[#708d81] text-xs">{user.email}</p>
-                     </div>
-                  </div>
-                </div>
                 <Link to="/orders" className={getNavLinkClass("/orders")} onClick={() => setIsMobileMenuOpen(false)}>
                   <div className="flex items-center"> <FiBox className="mr-2" /> My Orders </div>
                 </Link>

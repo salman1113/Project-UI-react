@@ -1,29 +1,29 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Added Link
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi"; 
-import { useGoogleLogin } from '@react-oauth/google'; 
-import { FcGoogle } from "react-icons/fc"; 
+import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
+import { useGoogleLogin } from '@react-oauth/google';
+import { FcGoogle } from "react-icons/fc";
 
 const Login = () => {
-  const { loginUserWithAPI, googleLogin } = useContext(AuthContext); 
+  const { loginUserWithAPI, googleLogin } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    username: "", 
+    username: "",
     password: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // --- GOOGLE LOGIN HOOK (UPDATED) ---
+  // --- GOOGLE LOGIN HOOK ---
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: (response) => googleLogin(response, navigate, toast),
     onError: () => toast.error("Google Login Failed"),
-    flow: 'auth-code', // IMPORTANT: This requests an authorization code
+    flow: 'auth-code',
   });
 
   const handleChange = (e) => {
@@ -32,18 +32,18 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true); 
+    setLoading(true);
     try {
       await loginUserWithAPI(form, navigate, toast);
     } catch (error) {
       console.error("Login failed", error);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4"
       style={{
         backgroundImage: "url('https://www.apple.com/v/airpods-max/i/images/overview/product-stories/anc/anc_airpod_max_lifestyle__duzobvqwpz42_large_2x.jpg')",
@@ -52,14 +52,14 @@ const Login = () => {
         backgroundAttachment: "fixed",
       }}
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="w-full max-w-md p-8 rounded-2xl backdrop-blur-lg bg-white/10 border border-white/20 shadow-xl"
         style={{ boxShadow: "0 8px 32px 0 rgba(191, 6, 3, 0.2)" }}
       >
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.8 }}
@@ -68,7 +68,7 @@ const Login = () => {
         >
           Welcome Back
         </motion.h2>
-        
+
         <form onSubmit={handleLogin} className="space-y-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -76,7 +76,7 @@ const Login = () => {
             transition={{ delay: 0.4, duration: 0.5 }}
           >
             <input
-              type="text" 
+              type="text"
               name="username"
               placeholder="Username"
               value={form.username}
@@ -85,36 +85,48 @@ const Login = () => {
               required
             />
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.6, duration: 0.5 }}
-            className="relative"
           >
-            <input
-              type={showPassword ? "text" : "password"} 
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white pr-10"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-[#f4d58d]"
-            >
-              {showPassword ? <FiEyeOff /> : <FiEye />}
-            </button>
+            <div className="relative">
+                <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white pr-10"
+                required
+                />
+                <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-[#f4d58d]"
+                >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+            </div>
+            
+            {/* 🔥 UPDATED POSITION: Forgot Password Link 🔥 */}
+            <div className="flex justify-end mt-2">
+                <Link 
+                    to="/forgot-password" 
+                    className="text-sm font-medium hover:underline transition-colors"
+                    style={{ color: "#f4d58d" }}
+                >
+                    Forgot Password?
+                </Link>
+            </div>
           </motion.div>
-          
+
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            disabled={loading} 
+            disabled={loading}
             className="w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             style={{
               backgroundColor: "#bf0603",
@@ -136,27 +148,27 @@ const Login = () => {
           {/* --- GOOGLE LOGIN SECTION START --- */}
           <div className="mt-4 flex flex-col gap-4">
             <div className="relative flex items-center justify-center">
-                <div className="border-t border-white/20 w-full"></div>
-                <span className="bg-transparent px-2 text-sm text-white/50">OR</span>
-                <div className="border-t border-white/20 w-full"></div>
+              <div className="border-t border-white/20 w-full"></div>
+              <span className="bg-transparent px-2 text-sm text-white/50">OR</span>
+              <div className="border-t border-white/20 w-full"></div>
             </div>
 
             <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="button" 
-                onClick={() => handleGoogleLogin()}
-                className="w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 transition-colors"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => handleGoogleLogin()}
+              className="w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 transition-colors"
             >
-                <FcGoogle className="text-xl" />
-                Continue with Google
+              <FcGoogle className="text-xl" />
+              Continue with Google
             </motion.button>
           </div>
           {/* --- GOOGLE LOGIN SECTION END --- */}
 
         </form>
 
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.8 }}

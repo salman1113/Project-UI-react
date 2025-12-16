@@ -17,20 +17,20 @@ const FeaturedProducts = () => {
     const fetchProducts = async () => {
       try {
         const response = await axios.get('http://localhost:8000/api/products/');
-        
+
         let data = response.data;
 
         // 1. Check for Pagination (DRF returns data in 'results')
         if (data.results) {
-            data = data.results;
+          data = data.results;
         }
 
         // 2. Filter Active Products (Use 'is_active' instead of 'isActive')
         // Note: If your backend filters this automatically, you can remove this filter.
-        const activeProducts = Array.isArray(data) 
-            ? data.filter(p => p.is_active !== false) 
-            : [];
-            
+        const activeProducts = Array.isArray(data)
+          ? data.filter(p => p.is_active !== false)
+          : [];
+
         setProducts(activeProducts);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -62,9 +62,9 @@ const FeaturedProducts = () => {
   // If no products found
   if (products.length === 0) {
     return (
-        <div className="text-center text-gray-400 py-8">
-            <p>No featured products available at the moment.</p>
-        </div>
+      <div className="text-center text-gray-400 py-8">
+        <p>No featured products available at the moment.</p>
+      </div>
     );
   }
 
@@ -89,8 +89,8 @@ const FeaturedProducts = () => {
                 className="absolute top-0 left-0 w-full h-full object-cover"
                 loading="lazy"
                 onError={(e) => {
-                    e.target.onerror = null; 
-                    e.target.src="https://via.placeholder.com/400?text=No+Image"
+                  e.target.onerror = null;
+                  e.target.src = "https://via.placeholder.com/400?text=No+Image"
                 }}
               />
             </div>
@@ -255,6 +255,7 @@ const Home = () => {
 
               <div className="absolute inset-0 z-20 flex items-center">
                 <div className="container mx-auto px-4 sm:px-6">
+                  {/* ALIGNMENT: Left-aligned for standard professional look (removed mx-auto and text-center) */}
                   <motion.div
                     initial="hidden"
                     animate="visible"
@@ -265,7 +266,7 @@ const Home = () => {
                     </motion.p>
                     <motion.h1
                       variants={itemVariants}
-                      className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-4">
+                      className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-2 sm:mb-4">
                       {slide.title}
                     </motion.h1>
                     <motion.p variants={itemVariants} className="text-sm sm:text-base md:text-lg mb-3 sm:mb-6">
@@ -288,24 +289,99 @@ const Home = () => {
         </Swiper>
       </section>
 
-
       <motion.section
         {...sectionAnimation}
         className="py-12 sm:py-16 md:py-20">
-        <div className="text-center">
-          <h2 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-4">
-            <motion.span className="text-[#E2E2B6]">
-              <CountUp
-                end={100000}
-                duration={3}
-                separator=","
-                delay={0.5} />
-              +
-            </motion.span>
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 mt-2 sm:mt-4">
-            Happy Customers and Counting
-          </p>
+
+        {/* The container for the three counters */}
+        <div className="container mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+
+          {/* 1. Happy Customers (CENTERED) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            className="p-4 rounded-lg">
+
+            {/* Icon: Centered using mx-auto */}
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-[#E2E2B6] mb-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657A8 8 0 016.343 5.343M17.657 16.657L20 19m-4.343-2.343l-1.657-1.657m-4.343-2.343L12 12m0 0l-2.343-2.343m2.343 2.343l2.343 2.343m-2.343-2.343L9.657 9.657m1.686-2.657L12 5m-2 7a2 2 0 11-4 0 2 2 0 014 0zM12 21a9 9 0 00-6.183-1.85A1 1 0 015 17.5V17m7 4a9 9 0 006.183-1.85A1 1 0 0019 17.5V17" />
+            </svg>
+
+            <h2 className="text-4xl sm:text-6xl md:text-6xl lg:text-7xl font-bold mb-1">
+              <motion.span className="text-white">
+                <CountUp
+                  end={100000}
+                  duration={3}
+                  separator=","
+                  delay={0.5} />
+                +
+              </motion.span>
+            </h2>
+
+            <p className="text-base sm:text-lg md:text-xl text-gray-400">
+              Happy Customers
+            </p>
+          </motion.div>
+
+          {/* 2. Products Shipped (CENTERED) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true, margin: "-50px" }}
+            className="p-4 rounded-lg border-y-2 border-gray-700/50 md:border-y-0 md:border-x-2">
+
+            {/* Icon: Centered using mx-auto */}
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-[#E2E2B6] mb-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 5h12a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+
+            <h2 className="text-4xl sm:text-6xl md:text-6xl lg:text-7xl font-bold mb-1">
+              <motion.span className="text-white">
+                <CountUp
+                  end={500000}
+                  duration={3.5}
+                  separator=","
+                  delay={0.7} />
+                +
+              </motion.span>
+            </h2>
+
+            <p className="text-base sm:text-lg md:text-xl text-gray-400">
+              Products Shipped
+            </p>
+          </motion.div>
+
+          {/* 3. Years in Business (CENTERED) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            viewport={{ once: true, margin: "-50px" }}
+            className="p-4 rounded-lg">
+
+            {/* Icon: Centered using mx-auto */}
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-[#E2E2B6] mb-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+
+            <h2 className="text-4xl sm:text-6xl md:text-6xl lg:text-7xl font-bold mb-1">
+              <motion.span className="text-white">
+                <CountUp
+                  end={10}
+                  duration={2}
+                  delay={0.9} />
+                +
+              </motion.span>
+            </h2>
+
+            <p className="text-base sm:text-lg md:text-xl text-gray-400">
+              Years in Business
+            </p>
+          </motion.div>
+
         </div>
       </motion.section>
 
@@ -352,7 +428,7 @@ const Home = () => {
                   className="text-sm sm:text-base md:text-lg text-gray-200 mb-6"
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
-                  transition={{ delay: 0.9 }}   >
+                  transition={{ delay: 0.9 }}   >
                   Experience the perfect harmony of high-fidelity audio and cutting-edge design.
                   Our premium headphones deliver immersive sound with adaptive EQ, active
                   noise cancellation, and spatial audio for a theater-like experience.
@@ -497,7 +573,7 @@ const Home = () => {
                     scale: 0.98,
                     transition: { duration: 0.1 }
                   }}
-                  className="bg-white text-black px-6 py-3 sm:px-8 sm:py-4 rounded-full font-medium text-sm sm:text-base">
+                  className="bg-[#E2E2B6] text-black px-6 py-3 sm:px-8 sm:py-4 rounded-full font-medium text-sm sm:text-base">
                   Explore Audio Products
                 </motion.button>
               </motion.div>
@@ -521,7 +597,7 @@ const Home = () => {
           {[
             {
               icon: (
-                <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-4 sm:mb-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-0 mb-4 sm:mb-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ),
@@ -530,7 +606,7 @@ const Home = () => {
             },
             {
               icon: (
-                <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-4 sm:mb-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-0 mb-4 sm:mb-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               ),
@@ -539,7 +615,7 @@ const Home = () => {
             },
             {
               icon: (
-                <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-4 sm:mb-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-0 mb-4 sm:mb-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               ),
@@ -550,7 +626,7 @@ const Home = () => {
                 key={index}
                 {...staggeredAnimation}
                 transition={{ duration: 0.5, delay: index * 0.1 + 0.2 }}
-                className="bg-gray-800 p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-xl shadow-sm text-center hover:shadow-md transition-shadow text-white"
+                className="bg-gray-800 p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-xl shadow-sm hover:shadow-md transition-shadow text-white" // ALIGNMENT: Removed text-center
                 whileHover={{
                   y: -5,
                   transition: { duration: 0.3 }
@@ -570,7 +646,7 @@ const Home = () => {
       <motion.section
         {...sectionAnimation}
         className="mb-8 sm:mb-12 md:mb-16 bg-gradient-to-r from-gray-900 to-[#0A0F2C] text-[#E2E2B6] p-6 sm:p-8 md:p-10 lg:p-12 rounded-xl sm:rounded-2xl" >
-        <div className="max-w-3xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto text-left"> {/* ALIGNMENT: Changed text-center to text-left */}
           <motion.h2
             initial={{ y: 20 }}
             whileInView={{ y: 0 }}
@@ -592,7 +668,7 @@ const Home = () => {
             whileInView={{ y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-md mx-auto">
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-full"> {/* ALIGNMENT: Removed max-w-md mx-auto to align left */}
             <motion.input
               type="email"
               placeholder="Your email address"

@@ -2,6 +2,7 @@ import { createContext, useEffect, useState, useMemo, useCallback } from "react"
 import axios from "axios";
 import { jwtDecode } from "jwt-decode"; 
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify"; // Ensure toast is imported
 
 // Base URL for your Django Backend
 const API_URL = "http://localhost:8000/api";
@@ -14,7 +15,12 @@ export const AuthContext = createContext({
   logoutUser: () => { },
   signupUser: () => { },
   loginUserWithAPI: () => { },
-  googleLogin: () => { }, 
+  googleLogin: () => { },
+  // 👇 New Functions
+  updateProfile: () => { },
+  changePassword: () => { },
+  requestPasswordReset: () => { },
+  confirmPasswordReset: () => { },
 });
 
 export const AuthProvider = ({ children }) => {
@@ -30,7 +36,6 @@ export const AuthProvider = ({ children }) => {
       const currentTime = Date.now() / 1000;
       return decoded.exp > currentTime;
     } catch (error) {
-      // If it's not a JWT (e.g. standard token), assume valid if it exists
       return !!token;
     }
   };
@@ -50,46 +55,35 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
   }, []);
 
-  // --- SIGNUP (Register) ---
+  // --- SIGNUP ---
   const signupUser = useCallback(async (form, navigate, toast) => {
     const { name, email, password } = form; 
-
     try {
       await axios.post(`${API_URL}/register/`, {
         username: name, 
         email: email,
         password: password,
       });
-
       toast.success("Signup successful! Please login.");
       navigate("/login");
     } catch (err) {
       const errorMsg = err.response?.data?.username?.[0] || err.response?.data?.email?.[0] || "Signup failed";
       toast.error(errorMsg);
-      console.error("Signup error:", err);
     }
   }, []);
 
-  // --- LOGIN (Standard Username/Password) - FIXED ---
+  // --- LOGIN (Standard) ---
   const loginUserWithAPI = useCallback(async (form, navigate, toast) => {
     const { username, password } = form;
-
     if (!username || !password) {
       toast.warn("Please enter username and password");
       return;
     }
-
     try {
-      const res = await axios.post(`${API_URL}/login/`, {
-        username: username,
-        password: password,
-      });
-
+      const res = await axios.post(`${API_URL}/login/`, { username, password });
       const { access, refresh } = res.data;
       
       let userData = {};
-
-      // Case 1: If backend sends full user object (Like in Google Login config)
       if (res.data.user) {
          const userObj = res.data.user;
          userData = {
@@ -100,47 +94,36 @@ export const AuthProvider = ({ children }) => {
             image: userObj.profile_image,
             role: "user",       
          };
-      } 
-      // Case 2: If backend sends only Token (Standard JWT Response) -> Use Fallback
-      else {
+      } else {
          const decoded = jwtDecode(access);
          userData = {
             id: decoded.user_id,
-            username: username, // Form-ൽ നിന്ന് എടുത്ത username
+            username: username,
             email: "", 
-            name: username,     // Fallback name
-            image: null,        // No image available in standard token
+            name: username,
+            image: null,
             role: "user",       
          };
       }
-
       loginUser(userData, { access, refresh });
       toast.success("Login successful");
       navigate("/");
-
     } catch (err) {
-      // 401 Error വന്നാൽ പാസ്‌വേഡ് തെറ്റാണ് എന്നാണ് അർത്ഥം
       const errorMessage = err.response?.data?.detail || "Invalid credentials";
       toast.error(errorMessage);
-      console.error("Login error:", err);
     }
   }, [loginUser]);
 
-  // --- GOOGLE LOGIN (Hybrid Support) ---
+  // --- GOOGLE LOGIN ---
   const googleLogin = useCallback(async (response, navigate, toast) => {
     try {
-      const res = await axios.post(`${API_URL}/auth/google/`, {
-        code: response.code, 
-      });
-
+      const res = await axios.post(`${API_URL}/auth/google/`, { code: response.code });
       const data = res.data;
-      
       const access = data.access_token || data.access || data.key;
       const refresh = data.refresh_token || data.refresh || "";
 
       if (access) {
         let userData = {};
-
         if (data.user) {
             userData = {
                 id: data.user.pk || data.user.id,
@@ -161,22 +144,14 @@ export const AuthProvider = ({ children }) => {
                     role: "user"
                 };
              } catch (e) {
-                console.log("Using standard token login");
-                userData = {
-                    username: "Google User",
-                    name: "Google User",
-                    role: "user"
-                };
+                userData = { username: "Google User", name: "Google User", role: "user" };
              }
         }
-
         loginUser(userData, { access, refresh });
-
         toast.success("Google Login Successful!");
         navigate("/");
       }
     } catch (err) {
-      console.error("Google Login Error:", err);
       if (err.response?.data?.non_field_errors) {
         toast.error(err.response.data.non_field_errors[0]);
       } else {
@@ -185,6 +160,65 @@ export const AuthProvider = ({ children }) => {
     }
   }, [loginUser]);
 
+  // --- 🌟 NEW: UPDATE PROFILE (Name, etc.) ---
+  const updateProfile = useCallback(async (profileData) => {
+    try {
+      const token = tokens?.access;
+      const response = await axios.patch(`${API_URL}/user/`, profileData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update local state with new info
+      const updatedUser = { ...user, ...response.data };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update profile.");
+      throw err;
+    }
+  }, [tokens, user]);
+
+  // --- 🌟 NEW: CHANGE PASSWORD (For Logged In Users) ---
+  const changePassword = useCallback(async (passwordData) => {
+    try {
+      const token = tokens?.access;
+      await axios.post(`${API_URL}/password/change/`, passwordData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Password changed successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.detail || "Password change failed");
+      throw err;
+    }
+  }, [tokens]);
+
+  // --- 🌟 NEW: REQUEST PASSWORD RESET (Forgot Password) ---
+  const requestPasswordReset = useCallback(async (email) => {
+    try {
+      await axios.post(`${API_URL}/password/reset/`, { email });
+      toast.success("Password reset link sent to your email!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send reset link. Please check the email.");
+    }
+  }, []);
+
+  // --- 🌟 NEW: CONFIRM PASSWORD RESET (From Email Link) ---
+  const confirmPasswordReset = useCallback(async (data) => {
+    try {
+      await axios.post(`${API_URL}/password/reset/confirm/`, data);
+      toast.success("Password has been reset successfully! Please login.");
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to reset password. Link might be expired.");
+      return false;
+    }
+  }, []);
 
   // --- RESTORE SESSION ---
   useEffect(() => {
@@ -217,8 +251,13 @@ export const AuthProvider = ({ children }) => {
     logoutUser,
     signupUser,
     loginUserWithAPI,
-    googleLogin, 
-  }), [user, tokens, isLoading, loginUser, logoutUser, signupUser, loginUserWithAPI, googleLogin]);
+    googleLogin,
+    // Add new functions to context
+    updateProfile,
+    changePassword,
+    requestPasswordReset,
+    confirmPasswordReset
+  }), [user, tokens, isLoading, loginUser, logoutUser, signupUser, loginUserWithAPI, googleLogin, updateProfile, changePassword, requestPasswordReset, confirmPasswordReset]);
 
   return (
     <AuthContext.Provider value={contextValue}>
@@ -233,22 +272,15 @@ export const useAxios = () => {
   const token = storedTokens ? JSON.parse(storedTokens)?.access : null;
 
   const axiosInstance = useMemo(() => {
-    const instance = axios.create({
-      baseURL: API_URL,
-    });
-
+    const instance = axios.create({ baseURL: API_URL });
     instance.interceptors.request.use(async (config) => {
       if (token) {
         const isJwt = token.split('.').length === 3;
         config.headers.Authorization = isJwt ? `Bearer ${token}` : `Token ${token}`;
       }
       return config;
-    }, (error) => {
-      return Promise.reject(error);
-    });
-
+    }, (error) => Promise.reject(error));
     return instance;
   }, [token]);
-
   return axiosInstance;
 };

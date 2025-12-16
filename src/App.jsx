@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./admin/components/AdminProtectedRoute";
 import { useContext } from "react";
 
+// Pages
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Products from "./pages/Products";
@@ -22,11 +23,15 @@ import Wishlist from "./pages/Wishlist";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders";
-import UserSettings from "./pages/UserSettings";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
+
+// 👇 NEW PAGES IMPORTED
+import Settings from "./pages/Settings"; // Replaces UserSettings
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 
 // Admin Pages
 import AdminDashboard from "./admin/pages/AdminDashboard";
@@ -43,7 +48,7 @@ const App = () => {
           <WishlistProvider>
             <ToastContainer
               position="bottom-left"
-              autoClose={1000}
+              autoClose={3000} // Increased slightly for readability
               hideProgressBar={false}
               newestOnTop={false}
               closeOnClick
@@ -51,6 +56,7 @@ const App = () => {
               pauseOnFocusLoss
               draggable
               pauseOnHover
+              theme="dark" // Optional: Matches your dark theme better
             />
 
             <AppContent />
@@ -61,7 +67,7 @@ const App = () => {
   );
 };
 
-// Move the conditional logic to a separate component
+// Separate component for Conditional Rendering
 const AppContent = () => {
   const { user } = useContext(AuthContext);
 
@@ -84,18 +90,26 @@ const AppContent = () => {
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/products" element={<Products />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/products/:id" element={<ProductDetails />} />
+        
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        
+        {/* 👇 PASSWORD RESET ROUTES (Public) */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
+
         <Route path="/success" element={<Success />} />
 
-        {/* Protected Routes */}
+        {/* Protected Routes (Login Required) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
-          <Route path="/settings" element={<UserSettings />} />
+          
+          {/* 👇 NEW SETTINGS PAGE */}
+          <Route path="/settings" element={<Settings />} />
         </Route>
 
         {/* 404 Not Found */}
