@@ -2,7 +2,7 @@ import { createContext, useEffect, useState, useMemo, useCallback } from "react"
 import axios from "axios";
 import { jwtDecode } from "jwt-decode"; 
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // Ensure toast is imported
+import { toast } from "react-toastify";
 
 // Base URL for your Django Backend
 const API_URL = "http://localhost:8000/api";
@@ -16,7 +16,7 @@ export const AuthContext = createContext({
   signupUser: () => { },
   loginUserWithAPI: () => { },
   googleLogin: () => { },
-  // 👇 New Functions
+  // pass Functions
   updateProfile: () => { },
   changePassword: () => { },
   requestPasswordReset: () => { },
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [loginUser]);
 
-  // --- 🌟 NEW: UPDATE PROFILE (Name, etc.) ---
+  // NEW: UPDATE PROFILE (Name, etc.) ---
   const updateProfile = useCallback(async (profileData) => {
     try {
       const token = tokens?.access;
@@ -181,7 +181,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [tokens, user]);
 
-  // --- 🌟 NEW: CHANGE PASSWORD (For Logged In Users) ---
+  // NEW: CHANGE PASSWORD (For Logged In Users) ---
   const changePassword = useCallback(async (passwordData) => {
     try {
       const token = tokens?.access;
@@ -196,7 +196,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [tokens]);
 
-  // --- 🌟 NEW: REQUEST PASSWORD RESET (Forgot Password) ---
+  // NEW: REQUEST PASSWORD RESET (Forgot Password) ---
   const requestPasswordReset = useCallback(async (email) => {
     try {
       await axios.post(`${API_URL}/password/reset/`, { email });
@@ -207,7 +207,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // --- 🌟 NEW: CONFIRM PASSWORD RESET (From Email Link) ---
+  // NEW: CONFIRM PASSWORD RESET (From Email Link) ---
   const confirmPasswordReset = useCallback(async (data) => {
     try {
       await axios.post(`${API_URL}/password/reset/confirm/`, data);

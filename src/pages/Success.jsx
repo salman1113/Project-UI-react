@@ -102,7 +102,7 @@ const Success = () => {
         <p>Need help? <Link to="/contact" className="text-[#f4d58d] hover:underline">Contact us</Link></p>
       </motion.div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes drawCircle {
           to {
             stroke-dashoffset: 0;

@@ -123,7 +123,7 @@ const ProductCard = ({ product }) => {
         </motion.button>
 
         <Link
-          to={`/product/${product.id}`}
+          to={`/products/${product.id}`}
           className="block text-center text-sm text-[#708d81] hover:text-[#f4d58d] mt-2 transition-colors group"
         >
           View Details <span className="inline-block group-hover:translate-x-1 transition-transform">→</span>

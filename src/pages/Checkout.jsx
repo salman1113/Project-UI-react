@@ -108,9 +108,9 @@ const Checkout = () => {
       // 2. Move items from Cart to OrderItems
       // 3. Empty the Cart on the server side
       await api.post("/orders/", {
-        total: finalTotal,
-        shipping: shippingInfo,
-        payment_method: paymentMethod, // Matches Django field name
+       total_amount: finalTotal,    
+        shipping_details: shippingInfo, 
+        payment_method: paymentMethod,
         status: "processing"
       });
 
