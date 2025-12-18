@@ -12,7 +12,6 @@ export const CartProvider = ({ children }) => {
 
   // --- FETCH CART ---
   const loadCart = useCallback(async () => {
-    // User logout ആയാൽ Cart ക്ലിയർ ചെയ്യണം
     if (!user) {
       setCart([]);
       setLoading(false);
@@ -29,7 +28,6 @@ export const CartProvider = ({ children }) => {
       setCart(formattedCart);
     } catch (err) {
       console.error("Failed to load cart", err);
-      // 401 വന്നാൽ യൂസർ ലോഗൗട്ട് ആയതായി കരുതാം, അതിനാൽ കാർട്ട് ക്ലിയർ ചെയ്യുന്നു
       if (err.response?.status === 401) setCart([]);
     } finally {
       setLoading(false);
@@ -41,7 +39,7 @@ export const CartProvider = ({ children }) => {
     loadCart();
   }, [loadCart]);
 
-  // --- ADD TO CART ---
+  // --- ADD TO CART (UPDATED ERROR HANDLING) ---
   const addToCart = useCallback(async (product, event) => {
     if (event?.preventDefault) event.preventDefault();
 
@@ -74,12 +72,16 @@ export const CartProvider = ({ children }) => {
         toast.success("Added to cart");
       }
       
-      // 3. Refresh to get the correct 'cart_item_id' from backend
+      // 3. Refresh to sync with server
       await loadCart(); 
 
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to add item");
+      console.error("Add to cart error:", err);
+      
+      // 👇 IMPORTANT: ബാക്കെൻഡിൽ നിന്നുള്ള എറർ മെസ്സേജ് കാണിക്കുന്നു
+      const errorMsg = err.response?.data?.error || "Failed to add item";
+      toast.error(errorMsg);
+
       await loadCart(); // Revert to server state on error
     }
   }, [user, api, cart, loadCart]);
@@ -90,22 +92,19 @@ export const CartProvider = ({ children }) => {
 
     const cartItem = cart.find(item => item.id === productId);
     
-    // cart_item_id ഇല്ലെങ്കിൽ (Optimistic update സമയത്ത്), ഡിലീറ്റ് ചെയ്യാൻ പറ്റില്ല
     if (!cartItem?.cart_item_id) {
-        await loadCart(); // Refresh and try again theoretically, but just returning for safety
+        await loadCart(); 
         return;
     }
 
     try {
-      // Optimistic Remove
       setCart(prev => prev.filter(item => item.id !== productId));
-      
       await api.delete(`/cart/${cartItem.cart_item_id}/`);
       toast.success("Removed from cart");
     } catch (err) {
       console.error(err);
       toast.error("Failed to remove");
-      loadCart(); // Revert
+      loadCart();
     }
   }, [cart, api, loadCart]);
 
@@ -114,21 +113,20 @@ export const CartProvider = ({ children }) => {
     if (event?.preventDefault) event.preventDefault();
     
     const previousCart = [...cart];
-    setCart([]); // Clear UI first
+    setCart([]); 
 
     try {
-      // Delete items one by one (Parallel requests)
       const deletePromises = previousCart.map(item => 
         item.cart_item_id ? api.delete(`/cart/${item.cart_item_id}/`) : Promise.resolve()
       );
 
       await Promise.all(deletePromises);
-      toast.success("Cart cleared");
+      // toast.success("Cart cleared"); // Optional
 
     } catch (err) {
       console.error("Clear cart error:", err);
       toast.error("Failed to clear cart fully");
-      setCart(previousCart); // Undo on fail
+      setCart(previousCart); 
     }
   }, [cart, api]);
 
@@ -151,12 +149,11 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      // Optimistic Decrement
       setCart(prev => prev.map(i => i.id === productId ? {...i, quantity: i.quantity - 1} : i));
       
       await api.post("/cart/", {
         product_id: productId,
-        quantity: -1 // Assuming backend handles adding negative quantity
+        quantity: -1 
       });
     } catch (err) {
       console.error(err);

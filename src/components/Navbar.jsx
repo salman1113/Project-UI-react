@@ -58,7 +58,6 @@ const Navbar = () => {
         if (Array.isArray(data)) {
           setProducts(data);
         } else if (data.results && Array.isArray(data.results)) {
-          // Django Rest Framework pagination format
           setProducts(data.results);
         } else if (data.products && Array.isArray(data.products)) {
           setProducts(data.products);
@@ -66,7 +65,7 @@ const Navbar = () => {
           setProducts([]);
         }
       } catch (error) {
-        // Optional: Set dummy data here if you want to test UI without backend
+        console.error("Failed to fetch products", error);
       } finally {
         setIsLoading(false);
       }
@@ -78,14 +77,12 @@ const Navbar = () => {
   // --- DATA PROCESSING ---
   const categories = useMemo(() => {
     if (!products.length) return [];
-    // Extract unique categories safely
     const cats = products.map(item => item.category).filter(Boolean);
     return [...new Set(cats)];
   }, [products]);
 
   const featuredProducts = useMemo(() => {
     if (!products.length) return [];
-    // Sort by count/popularity if available, else just take first 3
     return [...products]
       .sort((a, b) => (b.count || 0) - (a.count || 0))
       .slice(0, 3);
@@ -101,11 +98,12 @@ const Navbar = () => {
   const cartCount = cart?.length || 0;
   const wishlistCount = wishlist?.length || 0;
 
-  // Profile Image
+  // ✅ 1. Define Default Avatar URL
   const displayName = user?.name || user?.username || "User";
-  const userImage = user?.image
-    ? user.image
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=f4d58d&color=001427&bold=true&length=1`;
+  const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=f4d58d&color=001427&bold=true&length=1`;
+
+  // ✅ 2. Define Initial Image Source
+  const userImage = user?.image ? user.image : defaultAvatar;
 
   // Click Outside Listener
   useEffect(() => {
@@ -152,13 +150,12 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2 h-full">
           <Link to="/" className={getNavLinkClass("/")} onClick={() => setActivePage("/")}>Home</Link>
 
-          {/* --- 🌟 IMPROVED DROPDOWN SECTION 🌟 --- */}
+          {/* --- MEGA MENU DROPDOWN --- */}
           <div
             className="relative h-full flex items-center group"
             onMouseEnter={() => setIsProductDropdownOpen(true)}
             onMouseLeave={() => setIsProductDropdownOpen(false)}
           >
-            {/* Added padding-bottom to bridge the gap between link and dropdown */}
             <div className="py-4 cursor-pointer">
               <Link
                 to="/products"
@@ -169,7 +166,6 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* MEGA MENU DROPDOWN */}
             {isProductDropdownOpen && (
               <div className="absolute top-full -left-40 w-[600px] bg-[#001427] border border-[#708d81]/30 rounded-xl shadow-2xl p-6 z-[100] transition-all duration-200 ease-in-out mt-1">
 
@@ -275,13 +271,31 @@ const Navbar = () => {
                 }}
                 className="flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#f4d58d] rounded-full p-0.5 border border-[#708d81]/50 transition-all hover:shadow-lg"
               >
-                <img src={userImage} alt="Profile" className="h-9 w-9 rounded-full object-cover" />
+                {/* ✅ UPDATED: Add onError handler here */}
+                <img 
+                    src={userImage} 
+                    alt="Profile" 
+                    className="h-9 w-9 rounded-full object-cover" 
+                    onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.src = defaultAvatar;
+                    }}
+                />
               </button>
 
               {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-72 bg-[#001427] border border-[#708d81]/20 rounded-2xl shadow-2xl z-50 overflow-hidden text-sm">
                   <div className="px-6 py-5 flex flex-col items-center border-b border-[#708d81]/20 bg-[#001c3d]/50">
-                    <img src={userImage} alt="User" className="h-16 w-16 rounded-full mb-3 border-2 border-[#f4d58d]" />
+                    {/* ✅ UPDATED: Add onError handler here too */}
+                    <img 
+                        src={userImage} 
+                        alt="User" 
+                        className="h-16 w-16 rounded-full mb-3 border-2 border-[#f4d58d]" 
+                        onError={(e) => {
+                            e.target.onerror = null; 
+                            e.target.src = defaultAvatar;
+                        }}
+                    />
                     <p className="text-[#f4d58d] font-semibold text-lg">{displayName}</p>
                     <p className="text-[#708d81] text-xs mt-1">{user.email}</p>
                   </div>

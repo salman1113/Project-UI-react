@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
             username: userObj.username,
             email: userObj.email,
             name: userObj.name || userObj.username, 
-            image: userObj.profile_image,
+            image: userObj.image,
             role: "user",       
          };
       } else {
@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }) => {
                 username: data.user.username,
                 email: data.user.email,
                 name: data.user.name || data.user.username,
-                image: data.user.profile_image,
+                image: data.user.image,
                 role: "user"
             };
         } else {

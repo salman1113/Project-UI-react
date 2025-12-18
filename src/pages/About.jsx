@@ -1,153 +1,184 @@
 import { motion } from "framer-motion";
+import { FiHeadphones, FiActivity, FiShield, FiCpu, FiMusic, FiAward } from "react-icons/fi";
 
 const About = () => {
+  // Animation Variants
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+      transition: { staggerChildren: 0.15 }
     }
   };
 
   const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    hidden: { opacity: 0, y: 30 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } }
   };
+
+  const stats = [
+    { label: "Battery Life", value: "50h", icon: <FiActivity /> },
+    { label: "Quality Checks", value: "200+", icon: <FiShield /> },
+    { label: "Soundstage", value: "360°", icon: <FiMusic /> },
+    { label: "Since", value: "2018", icon: <FiAward /> },
+  ];
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="max-w-4xl mx-auto px-4 py-12 sm:py-16"
+      className="min-h-screen bg-[#001427] text-[#708d81] overflow-hidden relative"
     >
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="text-center mb-12"
-      >
-        <h1 className="text-3xl sm:text-4xl font-bold text-[#f4d58d] mb-3">
-          About <span className="text-[#bf0603]">ECHO BAY</span>
-        </h1>
-        <div className="w-20 h-1 bg-[#708d81] mx-auto"></div>
-      </motion.div>
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-[#bf0603]/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#f4d58d]/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
 
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="grid gap-6"
-      >
+      <div className="max-w-6xl mx-auto px-6 py-20 relative z-10">
+        
+        {/* --- HERO SECTION --- */}
         <motion.div
-          variants={item}
-          className="p-6 border-2 border-[#708d81] rounded-lg bg-[#001427]/80 backdrop-blur-sm"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-20"
         >
-          <div className="flex items-start mb-4">
-            <div className="w-1 h-8 bg-[#bf0603] mr-3 mt-1"></div>
-            <h2 className="text-xl font-semibold text-[#f4d58d]">Our Mission</h2>
-          </div>
-          <p className="text-[#708d81] pl-4">
-            At ECHO BAY, we redefine audio excellence with precision-engineered headsets that deliver studio-quality sound for everyday use. Our products are crafted for audiophiles, gamers, and professionals who demand acoustic perfection.
+          <h1 className="text-4xl md:text-6xl font-extrabold text-[#f4d58d] mb-6 tracking-tight">
+            Redefining <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#bf0603] to-[#d64040]">Sound.</span>
+          </h1>
+          <p className="text-lg md:text-xl text-[#708d81]/80 max-w-2xl mx-auto leading-relaxed">
+            At <span className="font-bold text-[#f2e8cf]">ECHO BAY</span>, we don't just build headsets. 
+            We engineer acoustic experiences for those who listen closely.
           </p>
         </motion.div>
 
-        <motion.div
-          variants={item}
-          className="p-6 border-2 border-[#708d81] rounded-lg bg-[#001427]/80 backdrop-blur-sm"
+        {/* --- STATS GRID --- */}
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20"
         >
-          <div className="flex items-start mb-4">
-            <div className="w-1 h-8 bg-[#bf0603] mr-3 mt-1"></div>
-            <h2 className="text-xl font-semibold text-[#f4d58d]">Our Products</h2>
-          </div>
-          <p className="text-[#708d81] pl-4 mb-4">
-            We specialize in premium audio solutions:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-4">
-            {[
-              "Noise-canceling wireless headsets",
-              "High-fidelity studio monitors",
-              "Competitive gaming headsets",
-              "Professional conference audio gear"
-            ].map((product, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ x: 5 }}
-                className="flex items-start"
-              >
-                <div className="w-2 h-2 bg-[#bf0603] rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                <p className="text-[#708d81]">{product}</p>
-              </motion.div>
-            ))}
-          </div>
+          {stats.map((stat, index) => (
+            <motion.div
+              key={index}
+              variants={item}
+              whileHover={{ scale: 1.05 }}
+              className="bg-[#001c3d]/50 border border-[#708d81]/20 p-6 rounded-2xl text-center backdrop-blur-sm hover:border-[#bf0603]/50 transition-colors"
+            >
+              <div className="text-[#bf0603] text-2xl mb-2 flex justify-center">{stat.icon}</div>
+              <h3 className="text-3xl font-bold text-[#f2e8cf] mb-1">{stat.value}</h3>
+              <p className="text-sm text-[#708d81] uppercase tracking-wider">{stat.label}</p>
+            </motion.div>
+          ))}
         </motion.div>
 
+        {/* --- BENTO GRID CONTENT --- */}
         <motion.div
-          variants={item}
-          className="p-6 border-2 border-[#708d81] rounded-lg bg-[#001427]/80 backdrop-blur-sm"
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          <div className="flex items-start mb-4">
-            <div className="w-1 h-8 bg-[#bf0603] mr-3 mt-1"></div>
-            <h2 className="text-xl font-semibold text-[#f4d58d]">Core Technologies</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-4">
-            {[
-              { title: "Acoustic Precision", desc: "40mm graphene drivers for crystal clarity" },
-              { title: "Active Noise Canceling", desc: "Industry-leading 35dB reduction" },
-              { title: "Battery Life", desc: "Up to 50 hours of continuous playback" },
-              { title: "Materials", desc: "Aerospace-grade aluminum and memory foam" }
-            ].map((tech, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.02 }}
-                className="p-4 border border-[#708d81]/30 rounded bg-[#001c3d]"
-              >
-                <h3 className="text-[#f4d58d] font-medium mb-1">{tech.title}</h3>
-                <p className="text-[#708d81] text-sm">{tech.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-        <motion.div
-          variants={item}
-          className="p-6 border-2 border-[#708d81] rounded-lg bg-[#001427]/80 backdrop-blur-sm"
-        >
-          <div className="flex items-start mb-4">
-            <div className="w-1 h-8 bg-[#bf0603] mr-3 mt-1"></div>
-            <h2 className="text-xl font-semibold text-[#f4d58d]">The Echo Bay Experience</h2>
-          </div>
-          <div className="pl-4">
-            <p className="text-[#708d81] mb-4">
-              Every Echo Bay headset undergoes 200+ quality checks and 50 hours of acoustic tuning before reaching you. Our proprietary SoundSphere™ technology creates a 360° soundstage that reveals details most headsets miss.
+          {/* Mission Card (Large) */}
+          <motion.div
+            variants={item}
+            className="md:col-span-2 bg-[#001c3d] p-8 rounded-3xl border border-[#708d81]/20 relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#bf0603]/20 to-transparent rounded-bl-full transition-transform group-hover:scale-110"></div>
+            <h2 className="text-2xl font-bold text-[#f4d58d] mb-4 flex items-center">
+              <FiHeadphones className="mr-3" /> Our Mission
+            </h2>
+            <p className="text-[#708d81] leading-relaxed text-lg">
+              We strive to bridge the gap between studio-grade professional audio and everyday durability. 
+              Whether you are an audiophile identifying every nuance or a gamer needing distinct spatial cues, 
+              Echo Bay delivers precision without compromise.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {["3D Audio", "Hi-Res Certified", "Bluetooth 5.3", "IPX4 Water Resistant"].map((feature, index) => (
-                <motion.span
-                  key={index}
-                  whileHover={{ scale: 1.05 }}
-                  className="px-3 py-1 bg-[#bf0603]/20 text-[#f4d58d] rounded-full text-xs"
-                >
-                  {feature}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
+          </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="mt-12 pt-6 border-t border-[#708d81]/20 text-center"
-      >
-        <p className="text-[#bf0603] font-medium tracking-wider">THE ECHO BAY TEAM</p>
-        <p className="text-[#708d81] text-sm mt-1">Engineering perfect sound since 2018</p>
-      </motion.div>
+          {/* Technology Card */}
+          <motion.div
+            variants={item}
+            className="bg-[#001c3d] p-8 rounded-3xl border border-[#708d81]/20 hover:bg-[#001c3d]/80 transition-colors"
+          >
+            <h2 className="text-xl font-bold text-[#f4d58d] mb-6 flex items-center">
+              <FiCpu className="mr-3" /> Core Tech
+            </h2>
+            <ul className="space-y-4">
+              {[
+                "40mm Graphene Drivers",
+                "Active Noise Canceling (35dB)",
+                "SoundSphere™ 3D Audio",
+                "Aerospace-grade Aluminum"
+              ].map((tech, i) => (
+                <li key={i} className="flex items-center text-sm group">
+                  <span className="w-2 h-2 bg-[#bf0603] rounded-full mr-3 group-hover:scale-150 transition-transform"></span>
+                  {tech}
+                </li>
+              ))}
+            </ul>
+            
+          </motion.div>
+
+          {/* Products Card */}
+          <motion.div
+            variants={item}
+            className="bg-[#001c3d] p-8 rounded-3xl border border-[#708d81]/20 hover:bg-[#001c3d]/80 transition-colors"
+          >
+            <h2 className="text-xl font-bold text-[#f4d58d] mb-6 flex items-center">
+              <FiMusic className="mr-3" /> Lineup
+            </h2>
+            <div className="space-y-3">
+              <div className="p-3 bg-[#001427] rounded-xl border-l-4 border-[#f4d58d]">
+                <h4 className="text-[#f2e8cf] font-bold text-sm">Wireless Series</h4>
+                <p className="text-xs mt-1">For freedom & travel</p>
+              </div>
+              <div className="p-3 bg-[#001427] rounded-xl border-l-4 border-[#bf0603]">
+                <h4 className="text-[#f2e8cf] font-bold text-sm">Pro Studio</h4>
+                <p className="text-xs mt-1">For creators & mixing</p>
+              </div>
+              <div className="p-3 bg-[#001427] rounded-xl border-l-4 border-[#708d81]">
+                <h4 className="text-[#f2e8cf] font-bold text-sm">Gaming Elite</h4>
+                <p className="text-xs mt-1">Low latency performance</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Engineering Card (Large) */}
+          <motion.div
+            variants={item}
+            className="md:col-span-2 bg-gradient-to-r from-[#001c3d] to-[#001427] p-8 rounded-3xl border border-[#708d81]/20"
+          >
+            <h2 className="text-2xl font-bold text-[#f4d58d] mb-4">Engineering Precision</h2>
+            <div className="flex flex-col md:flex-row gap-6 items-center">
+              <p className="text-[#708d81] leading-relaxed flex-1">
+                Every headset features custom-tuned drivers.  We utilize memory foam ear cups that adapt to your shape, ensuring comfort during those 
+                long listening sessions. Our Active Noise Cancellation algorithms are updated regularly to filter out 
+                modern distractions.
+              </p>
+              <div className="w-full md:w-1/3 p-4 bg-[#bf0603]/10 rounded-xl border border-[#bf0603]/30 text-center">
+                <span className="block text-3xl font-bold text-[#bf0603] mb-1">0.02%</span>
+                <span className="text-xs text-[#f4d58d]">Distortion Rate</span>
+              </div>
+            </div>
+          </motion.div>
+
+        </motion.div>
+
+        {/* --- FOOTER SIGNOFF --- */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mt-24 text-center"
+        >
+          <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#bf0603] to-transparent mx-auto mb-6"></div>
+          <p className="text-[#f2e8cf] text-lg font-medium tracking-wide">THE ECHO BAY TEAM</p>
+          <p className="text-[#708d81] text-sm mt-2 opacity-60">Engineering perfect sound in Calicut since 2018</p>
+        </motion.div>
+
+      </div>
     </motion.div>
   );
 };
 
-export default About; 
+export default About;

@@ -3,8 +3,9 @@ import { WishlistContext } from "../context/WishlistContext";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Link Import ചെയ്തു
 import { motion } from "framer-motion";
+import { FiEye } from "react-icons/fi"; // Eye Icon Import ചെയ്തു
 
 const Wishlist = () => {
   const { user, isLoading } = useContext(AuthContext);
@@ -29,37 +30,27 @@ const Wishlist = () => {
       return;
     }
 
-    // 1. Add to Cart (Context handles API and state)
+    if (product.count <= 0) {
+        toast.error("Sorry, this item is out of stock!");
+        return;
+    }
+
     await addToCart(product);
-    
-    // 2. Remove from Wishlist (Context handles API and state)
     await removeFromWishlist(product.id);
   };
 
   if (isLoading) {
-    return <div className="text-center py-10" style={{ color: colors.text }}>Loading...</div>; 
+    return <div className="text-center py-10 text-[#f2e8cf]">Loading...</div>; 
   }
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        when: "beforeChildren"
-      }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5
-      }
-    }
+    visible: { y: 0, opacity: 1, transition: { duration: 0.5 } }
   };
 
   return (
@@ -67,100 +58,117 @@ const Wishlist = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ 
-        background: colors.background,
-        color: colors.text
-      }}
-      className="min-h-screen"
+      className="min-h-screen py-10 px-4"
+      style={{ background: colors.background, color: colors.text }}
     >
-      <div className="max-w-6xl mx-auto px-4 py-10">
+      <div className="max-w-6xl mx-auto">
         <motion.h2 
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-2xl font-bold mb-6"
+          className="text-3xl font-bold mb-8"
           style={{ color: colors.highlight }}
         >
           My Wishlist
         </motion.h2>
 
         {wishlist.length === 0 ? (
-          <motion.p 
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{ color: colors.secondary }}
+            className="text-center py-20 border border-dashed border-[#708d81] rounded-lg"
           >
-            Your wishlist is empty.
-          </motion.p>
+            <p className="text-xl text-[#708d81]">Your wishlist is empty.</p>
+            <button onClick={() => navigate("/products")} className="mt-4 text-[#f4d58d] underline hover:text-[#bf0603]">
+                Browse Products
+            </button>
+          </motion.div>
         ) : (
           <motion.div 
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
           >
-            {wishlist.map((product) => (
-              <motion.div 
-                key={product.id}
-                variants={itemVariants}
-                whileHover={{ scale: 1.03 }}
-                className="border rounded-lg shadow-lg p-4"
-                style={{
-                  background: `rgba(0, 20, 39, 0.7)`,
-                  borderColor: colors.secondary,
-                  backdropFilter: 'blur(10px)'
-                }}
-              >
-                {/* --- IMAGE FIX --- */}
-                <motion.img
-                  src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.png'}
-                  alt={product.name}
-                  className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden"
-                  whileHover={{ scale: 1.05 }}
-                  style={{ border: `1px solid ${colors.secondary}` }}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "/default-product.png";
-                  }}
-                />
-                
-                <h3 className="text-lg font-semibold">{product.name}</h3>
-                <p style={{ color: colors.secondary }}>{product.category}</p>
-                
-                {/* --- PRICE FIX (Convert String to Number) --- */}
-                <p className="font-bold mb-3" style={{ color: colors.highlight }}>
-                  ₹{Number(product.price).toLocaleString('en-IN')}
-                </p>
+            {wishlist.map((product) => {
+              const isOutOfStock = product.count <= 0;
 
-                <div className="flex gap-3">
-                  <motion.button
-                    onClick={() => handleMoveToCart(product)}
-                    className="px-3 py-1 rounded text-sm"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      background: colors.accent,
-                      color: colors.text
-                    }}
-                  >
-                    Move to Cart
-                  </motion.button>
-                  <motion.button
-                    onClick={() => removeFromWishlist(product.id)}
-                    className="px-3 py-1 rounded text-sm"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      border: `1px solid ${colors.accent}`,
-                      color: colors.accent,
-                      background: 'transparent'
-                    }}
-                  >
-                    Remove
-                  </motion.button>
-                </div>
-              </motion.div>
-            ))}
+              return (
+                <motion.div 
+                  key={product.id}
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                  className="border rounded-xl shadow-lg p-4 relative overflow-hidden group flex flex-col"
+                  style={{
+                    background: `rgba(0, 20, 39, 0.7)`,
+                    borderColor: colors.secondary,
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                    {/* Image Section (Clickable) */}
+                    <Link to={`/products/${product.id}`} className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden block">
+                        <img
+                          src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.png'}
+                          alt={product.name}
+                          className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${isOutOfStock ? 'grayscale opacity-50' : ''}`}
+                          onError={(e) => { e.target.src = "/default-product.png"; }}
+                        />
+                        {isOutOfStock && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                <span className="bg-[#bf0603] text-white text-xs font-bold px-2 py-1 rounded shadow">OUT OF STOCK</span>
+                            </div>
+                        )}
+                        {/* Hover Overlay for View Details */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="text-white bg-black/50 px-3 py-1 rounded-full text-sm flex items-center gap-1 backdrop-blur-sm">
+                                <FiEye /> View
+                            </span>
+                        </div>
+                    </Link>
+                  
+                  <h3 className="text-lg font-semibold truncate text-[#f2e8cf]">{product.name}</h3>
+                  <p className="text-sm opacity-80 mb-2" style={{ color: colors.secondary }}>{product.category}</p>
+                  
+                  <p className="font-bold text-xl mb-4" style={{ color: colors.highlight }}>
+                    ₹{Number(product.price).toLocaleString('en-IN')}
+                  </p>
+
+                  {/* Buttons Section - Pushed to bottom */}
+                  <div className="mt-auto flex flex-col gap-2">
+                    <div className="flex gap-2">
+                        <motion.button
+                        onClick={() => handleMoveToCart(product)}
+                        disabled={isOutOfStock}
+                        whileTap={{ scale: 0.95 }}
+                        className={`flex-1 py-2 rounded text-sm font-medium transition-colors ${
+                            isOutOfStock 
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                            : 'bg-[#bf0603] text-[#f2e8cf] hover:bg-[#8d0801]'
+                        }`}
+                        >
+                        {isOutOfStock ? "Sold Out" : "Move to Cart"}
+                        </motion.button>
+                        
+                        <motion.button
+                        onClick={() => removeFromWishlist(product.id)}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-3 py-2 rounded text-sm border border-[#bf0603] text-[#bf0603] hover:bg-[#bf0603] hover:text-white transition-colors"
+                        >
+                        Remove
+                        </motion.button>
+                    </div>
+
+                    {/* 👇 NEW: View Details Button (Secondary Option) */}
+                    <Link 
+                        to={`/products/${product.id}`}
+                        className="text-center w-full py-2 rounded text-sm border border-[#708d81] text-[#708d81] hover:bg-[#708d81] hover:text-[#001427] transition-all"
+                    >
+                        View Details
+                    </Link>
+                  </div>
+
+                </motion.div>
+              );
+            })}
           </motion.div>
         )}
       </div>

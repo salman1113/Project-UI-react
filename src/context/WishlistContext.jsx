@@ -17,13 +17,10 @@ export const WishlistProvider = ({ children }) => {
     }
     try {
       const res = await api.get("/wishlist/");
-      
-      // Transform: Bind relationship ID (id) to product details
       const formattedWishlist = res.data.map(item => ({
           ...item.product,
-          wishlist_item_id: item.id // This ID is needed to delete
+          wishlist_item_id: item.id 
       }));
-
       setWishlist(formattedWishlist);
     } catch (err) {
       console.error("Failed to fetch wishlist", err);
@@ -31,7 +28,6 @@ export const WishlistProvider = ({ children }) => {
     }
   }, [user, api]);
 
-  // Initial Load
   useEffect(() => {
     fetchWishlist();
   }, [fetchWishlist]);
@@ -45,27 +41,27 @@ export const WishlistProvider = ({ children }) => {
         return;
     }
 
-    // Check locally to prevent duplicate calls
     if (wishlist.some(item => item.id === product.id)) {
         toast.info("Already in wishlist");
         return;
     }
 
     try {
-      setWishlist(prev => [...prev, product]); // Optimistic Update
+      setWishlist(prev => [...prev, product]); // Optimistic
       
       await api.post("/wishlist/", {
         product_id: product.id
       });
       
       toast.success("Added to wishlist");
-      // IMPORTANT: Refresh to get the real 'wishlist_item_id' for subsequent deletion
       await fetchWishlist(); 
 
     } catch (err) {
       console.error("Failed to add to wishlist", err);
-      toast.error("Failed to add");
-      fetchWishlist(); // Revert on error
+      // Show specific error if any
+      const errorMsg = err.response?.data?.error || "Failed to add";
+      toast.error(errorMsg);
+      fetchWishlist(); // Revert
     }
   };
 
@@ -75,31 +71,28 @@ export const WishlistProvider = ({ children }) => {
 
     const itemToRemove = wishlist.find(item => item.id === productId);
     
-    // If we don't have the relationship ID (rare case if sync is fast), verify data
     if (!itemToRemove?.wishlist_item_id) {
-        console.warn("Missing wishlist_item_id, refreshing...");
         await fetchWishlist(); 
         return;
     }
 
     try {
-      setWishlist(prev => prev.filter(item => item.id !== productId)); // Optimistic
-
+      setWishlist(prev => prev.filter(item => item.id !== productId)); 
       await api.delete(`/wishlist/${itemToRemove.wishlist_item_id}/`);
       toast.success("Removed from wishlist");
     } catch (err) {
       console.error("Failed to remove from wishlist", err);
       toast.error("Failed to remove");
-      fetchWishlist(); // Revert
+      fetchWishlist(); 
     }
   };
 
-  // --- CLEAR WISHLIST (Fixed to delete from Server) ---
+  // --- CLEAR WISHLIST ---
   const clearWishlist = async (event) => {
     if (event?.preventDefault) event.preventDefault();
     
     const previousList = [...wishlist];
-    setWishlist([]); // Clear UI
+    setWishlist([]); 
 
     try {
         const deletePromises = previousList.map(item => 
@@ -110,7 +103,7 @@ export const WishlistProvider = ({ children }) => {
         toast.success("Wishlist cleared");
     } catch (err) {
         console.error("Failed to clear wishlist", err);
-        setWishlist(previousList); // Revert
+        setWishlist(previousList); 
     }
   };
 

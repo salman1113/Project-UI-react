@@ -1,518 +1,401 @@
 import { useContext, useEffect, useState } from "react";
 import { CartContext } from "../context/CartContext";
-import { AuthContext, useAxios } from "../context/AuthContext"; // Use authenticated axios
+import { AuthContext, useAxios } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FaCreditCard, FaMoneyBillWave } from "react-icons/fa";
+import { FaCreditCard, FaMoneyBillWave, FaMapMarkerAlt, FaPlus, FaTrash } from "react-icons/fa";
 
 const Checkout = () => {
   const { user } = useContext(AuthContext);
   const { cart, clearCart, totalPrice } = useContext(CartContext);
-  const api = useAxios(); // Authenticated API instance
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  
-  const [paymentInfo, setPaymentInfo] = useState({
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    nameOnCard: "",
-  });
-  
-  const [shippingInfo, setShippingInfo] = useState({
-    address: "",
-    city: "",
-    state: "",
-    zip: "",
-  });
-  
-  const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-
+  const api = useAxios(); 
   const navigate = useNavigate();
 
+  // State Management
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("online"); 
+  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // New Address Form State
+  const [newAddress, setNewAddress] = useState({
+    name: "", phone: "", street: "", city: "", state: "", zip_code: "", is_default: false
+  });
+
+  // ✅ 1. PROTECTION: CHECK USER & EMPTY CART
   useEffect(() => {
     if (!user) {
-      toast.warn(
-        <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">⚠️</span> Please login to checkout
-        </div>
-      );
+      toast.warn("Please login to checkout");
       navigate("/login");
-    }
-  }, [user, navigate]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name in paymentInfo) {
-      setPaymentInfo({ ...paymentInfo, [name]: value });
+    } else if (cart.length === 0) {
+      // കാർട്ട് കാലിയാണെങ്കിൽ Checkout പേജിൽ നിൽക്കാൻ സമ്മതിക്കില്ല
+      toast.warn("Your cart is empty!");
+      navigate("/products");
     } else {
-      setShippingInfo({ ...shippingInfo, [name]: value });
+      fetchAddresses();
     }
-  };
+  }, [user, cart, navigate]);
 
-  const handleCardNumberChange = (e) => {
-    let value = e.target.value.replace(/\D/g, "");
-    value = value.replace(/(\d{4})/g, "$1 ").trim();
-    setPaymentInfo({ ...paymentInfo, cardNumber: value.slice(0, 19) });
-  };
-
-  const handleExpiryChange = (e) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 2) {
-      value = value.slice(0, 2) + "/" + value.slice(2, 4);
-    }
-    setPaymentInfo({ ...paymentInfo, expiry: value.slice(0, 5) });
-  };
-
-  const handleCVVChange = (e) => {
-    const value = e.target.value.replace(/\D/g, "");
-    setPaymentInfo({ ...paymentInfo, cvv: value.slice(0, 4) });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (paymentMethod === "card") {
-      if (
-        !paymentInfo.cardNumber ||
-        !paymentInfo.expiry ||
-        !paymentInfo.cvv ||
-        !paymentInfo.nameOnCard
-      ) {
-        toast.warn("Please fill all payment fields");
-        return;
+  const fetchAddresses = async () => {
+    try {
+      const res = await api.get("/addresses/");
+      setAddresses(res.data);
+      
+      if (res.data.length > 0) {
+        const defaultAddr = res.data.find(addr => addr.is_default);
+        setSelectedAddressId(defaultAddr ? defaultAddr.id : res.data[0].id);
       }
+    } catch (err) {
+      console.error("Failed to fetch addresses");
     }
+  };
 
-    if (
-      !shippingInfo.address ||
-      !shippingInfo.city ||
-      !shippingInfo.state ||
-      !shippingInfo.zip
-    ) {
-      toast.warn("Please fill all shipping fields");
+  // 2. Handle New Address Input
+  const handleAddressChange = (e) => {
+    setNewAddress({ ...newAddress, [e.target.name]: e.target.value });
+  };
+
+  // 3. Save New Address via API
+  const saveAddress = async () => {
+    if (!newAddress.name || !newAddress.street || !newAddress.city || !newAddress.zip_code || !newAddress.phone) {
+      toast.warn("Please fill all required fields");
       return;
     }
+    try {
+      const res = await api.post("/addresses/", newAddress);
+      setAddresses([...addresses, res.data]);
+      setSelectedAddressId(res.data.id); 
+      setIsAddingNew(false); 
+      toast.success("Address added successfully!");
+    } catch (err) {
+      toast.error("Failed to save address");
+    }
+  };
 
+  // 👇 RAZORPAY SCRIPT LOADER (Safety check)
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  // 4. Handle Online Payment (Razorpay Logic)
+  const handleOnlinePayment = async (orderId, amount) => {
+    const isLoaded = await loadRazorpay();
+    if (!isLoaded) {
+        toast.error("Razorpay SDK failed to load");
+        return;
+    }
+
+    try {
+      const { data } = await api.post("/payment/create/", { total_amount: amount });
+
+      const options = {
+        key: data.key_id, 
+        amount: data.amount,
+        currency: data.currency,
+        name: "EchoBay",
+        description: "Order Payment",
+        order_id: data.razorpay_order_id, 
+        handler: async function (response) {
+          try {
+            await api.post("/payment/verify/", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              order_id: orderId 
+            });
+            
+            toast.success("Payment Successful! Order Placed.");
+            clearCart();
+            
+            // ✅ PASS STATE TO SUCCESS PAGE
+            navigate("/success", { 
+                state: { fromCheckout: true, orderId: orderId } 
+            });
+
+          } catch (err) {
+            toast.error("Payment Verification Failed");
+            navigate("/orders"); 
+          }
+        },
+        prefill: {
+          name: user.username || "",
+          email: user.email || "",
+          contact: addresses.find(a => a.id === selectedAddressId)?.phone || ""
+        },
+        theme: { color: "#8d0801" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        toast.error("Payment Failed: " + response.error.description);
+      });
+      rzp.open();
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to initiate payment. Please try again.");
+    }
+  };
+
+  // 5. Final Submit Logic
+  const handleSubmit = async () => {
+    if (!selectedAddressId) {
+      toast.warn("Please select a shipping address");
+      return;
+    }
+    
     setLoading(true);
     
-    // Calculate final total (including COD fee if applicable)
+    const selectedAddrObject = addresses.find(a => a.id === selectedAddressId);
     const finalTotal = paymentMethod === "cod" ? totalPrice + 50 : totalPrice;
 
     try {
-      // --- UPDATED API CALL ---
-      // We send the order details to the new Django endpoint.
-      // The backend will automatically:
-      // 1. Create the Order
-      // 2. Move items from Cart to OrderItems
-      // 3. Empty the Cart on the server side
-      await api.post("/orders/", {
-       total_amount: finalTotal,    
-        shipping_details: shippingInfo, 
+      // Step 1: Create Order in Backend
+      const res = await api.post("/orders/", {
+        total_amount: finalTotal,
+        shipping_details: selectedAddrObject, 
         payment_method: paymentMethod,
-        status: "processing"
       });
 
-      // Clear Frontend Cart State
-      clearCart(); // This just clears the UI state now
-      
-      toast.success(
-        <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">✓</span> Order placed successfully!
-        </div>
-      );
-      navigate("/success");
+      // Step 2: Handle Payment Flow
+      if (paymentMethod === "online") {
+        await handleOnlinePayment(res.data.order_id, finalTotal);
+      } else {
+        // If COD -> Direct Success
+        toast.success("Order placed successfully!");
+        clearCart();
+        
+        // ✅ PASS STATE TO SUCCESS PAGE
+        navigate("/success", { 
+            state: { fromCheckout: true, orderId: res.data.order_id } 
+        });
+      }
+
     } catch (err) {
-      toast.error(
-        <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">⚠️</span> Order failed. Please try again.
-        </div>
-      );
-      console.error("Checkout Error:", err);
+      toast.error(err.response?.data?.error || "Order failed. Please check stock.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Navigation Helpers
   const nextStep = () => {
+    if (currentStep === 1 && !selectedAddressId && !isAddingNew) {
+      toast.warn("Please select an address");
+      return;
+    }
     if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
-
-  const prevStep = () => {
-    if (currentStep > 1) setCurrentStep(currentStep - 1);
-  };
+  
+  const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
   if (!user) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="mx-auto px-4 py-12 bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] min-h-screen"
-    >
-      <div className="max-w-5xl mx-auto">
-        <motion.h2
-          initial={{ y: -20 }}
-          animate={{ y: 0 }}
-          className="text-3xl font-bold text-[#f4d58d] mb-8"
+    <div className="min-h-screen bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] text-[#f2e8cf] py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+        <motion.h2 
+          initial={{ y: -20 }} animate={{ y: 0 }}
+          className="text-3xl font-bold text-[#f4d58d] mb-6 text-center"
         >
           Checkout
         </motion.h2>
 
-        <div className="flex justify-between mb-8">
-          {[1, 2, 3].map((step) => (
-            <div key={step} className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  currentStep >= step
-                    ? "bg-[#f4d58d] text-[#001427]"
-                    : "bg-[#001427] text-[#708d81] border border-[#708d81]"
-                } font-bold`}
-              >
-                {step}
+        {/* --- STEPS INDICATOR --- */}
+        <div className="flex justify-between mb-8 border-b border-[#708d81]/30 pb-4">
+          {["Shipping", "Payment", "Review"].map((label, i) => (
+            <div key={i} className={`flex flex-col items-center ${currentStep === i + 1 ? "text-[#f4d58d]" : "text-[#708d81]"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 font-bold ${currentStep === i + 1 ? "bg-[#f4d58d] text-black" : "bg-[#0f1b32] border border-[#708d81]"}`}>
+                {i + 1}
               </div>
-              <span
-                className={`mt-2 text-sm ${
-                  currentStep >= step ? "text-[#f4d58d]" : "text-[#708d81]"
-                }`}
-              >
-                {step === 1 ? "Shipping" : step === 2 ? "Payment" : "Review"}
-              </span>
+              <span className="text-sm">{label}</span>
             </div>
           ))}
         </div>
 
-        {cart.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-20"
-          >
-            <p className="text-[#708d81] text-xl mb-6">Your cart is empty</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/")}
-              className="bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] px-6 py-3 rounded-lg font-medium shadow-lg"
-            >
-              Continue Shopping
-            </motion.button>
-          </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left Column: Order Summary (Visual Only) */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-[#001427]/20 p-6 rounded-xl border border-[#708d81]/20"
-            >
-              <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">
-                Order Summary
-              </h3>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {cart.map((item) => (
-                  <motion.div
-                    key={item.id}
-                    layout
-                    className="flex items-center gap-4 p-3 rounded-lg bg-[#001427]/10"
+        {/* --- STEP 1: SHIPPING ADDRESS --- */}
+        {currentStep === 1 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-[#f4d58d]">Select Shipping Address</h3>
+              <button 
+                onClick={() => setIsAddingNew(!isAddingNew)}
+                className="flex items-center gap-2 text-[#f4d58d] border border-[#f4d58d] px-3 py-1 rounded hover:bg-[#f4d58d] hover:text-black transition"
+              >
+                <FaPlus /> {isAddingNew ? "Cancel" : "Add New"}
+              </button>
+            </div>
+
+            {/* Address List */}
+            {!isAddingNew && (
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                {addresses.map((addr) => (
+                  <div 
+                    key={addr.id}
+                    onClick={() => setSelectedAddressId(addr.id)}
+                    className={`relative p-4 border rounded-lg cursor-pointer transition-all ${
+                      selectedAddressId === addr.id 
+                      ? "border-[#f4d58d] bg-[#f4d58d]/10 shadow-[0_0_10px_rgba(244,213,141,0.2)]" 
+                      : "border-[#708d81]/30 hover:border-[#708d81]"
+                    }`}
                   >
-                    <motion.img
-                      whileHover={{ scale: 1.05 }}
-                      // Updated Image handling for arrays
-                      src={item.images && item.images.length > 0 ? item.images[0] : "/default-product.png"}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "/default-product.png";
-                      }}
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold text-[#f2e8cf]">{item.name}</p>
-                      <p className="text-sm text-[#708d81]">{item.category}</p>
-                      <p className="text-sm text-[#708d81]">
-                        Qty: {item.quantity}
-                      </p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FaMapMarkerAlt className="text-[#f4d58d]"/>
+                      <span className="font-bold text-lg">{addr.name}</span>
                     </div>
-                    <p className="font-bold text-[#f4d58d]">
-                      ₹{(Number(item.price) * item.quantity).toLocaleString()}
-                    </p>
-                  </motion.div>
+                    <p className="text-sm text-[#f2e8cf]/80">{addr.street}, {addr.city}</p>
+                    <p className="text-sm text-[#f2e8cf]/80">{addr.state} - {addr.zip_code}</p>
+                    <p className="text-sm text-[#708d81] mt-2 font-mono">📞 {addr.phone}</p>
+                  </div>
+                ))}
+                
+                {addresses.length === 0 && (
+                  <div className="col-span-2 text-center py-10 border border-dashed border-[#708d81] rounded-lg">
+                    <p className="text-[#708d81] mb-2">No saved addresses found.</p>
+                    <button onClick={() => setIsAddingNew(true)} className="text-[#f4d58d] underline">Add your first address</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Add New Address Form */}
+            {isAddingNew && (
+              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-[#001427]/50 p-6 rounded-lg border border-[#708d81]/30">
+                <h4 className="text-lg font-bold text-[#f4d58d] mb-4">Add New Address</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input name="name" placeholder="Full Name" onChange={handleAddressChange} className="bg-[#0f1b32] border border-[#708d81]/50 p-3 rounded text-white focus:border-[#f4d58d] outline-none" />
+                  <input name="phone" placeholder="Phone Number" onChange={handleAddressChange} className="bg-[#0f1b32] border border-[#708d81]/50 p-3 rounded text-white focus:border-[#f4d58d] outline-none" />
+                  <input name="street" placeholder="Street Address / Building" onChange={handleAddressChange} className="md:col-span-2 bg-[#0f1b32] border border-[#708d81]/50 p-3 rounded text-white focus:border-[#f4d58d] outline-none" />
+                  <input name="city" placeholder="City" onChange={handleAddressChange} className="bg-[#0f1b32] border border-[#708d81]/50 p-3 rounded text-white focus:border-[#f4d58d] outline-none" />
+                  <input name="state" placeholder="State" onChange={handleAddressChange} className="bg-[#0f1b32] border border-[#708d81]/50 p-3 rounded text-white focus:border-[#f4d58d] outline-none" />
+                  <input name="zip_code" placeholder="ZIP Code" onChange={handleAddressChange} className="bg-[#0f1b32] border border-[#708d81]/50 p-3 rounded text-white focus:border-[#f4d58d] outline-none" />
+                </div>
+                <button onClick={saveAddress} className="mt-6 w-full bg-[#f4d58d] text-black px-4 py-3 rounded-lg font-bold hover:bg-[#e0c070] transition">
+                  Save Address
+                </button>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* --- STEP 2: PAYMENT METHOD --- */}
+        {currentStep === 2 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h3 className="text-xl font-semibold text-[#f4d58d] mb-6">Choose Payment Method</h3>
+            <div className="flex flex-col md:flex-row gap-4">
+              <button 
+                onClick={() => setPaymentMethod("online")}
+                className={`flex-1 p-8 border rounded-lg flex flex-col items-center gap-3 transition-all ${
+                  paymentMethod === "online" 
+                  ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d] shadow-[0_0_15px_rgba(244,213,141,0.2)]" 
+                  : "border-[#708d81]/30 text-[#708d81] hover:bg-[#708d81]/10"
+                }`}
+              >
+                <FaCreditCard size={32} />
+                <span className="font-bold text-lg">Pay Online</span>
+                <span className="text-xs text-[#708d81]">(Razorpay Secure)</span>
+              </button>
+              
+              <button 
+                onClick={() => setPaymentMethod("cod")}
+                className={`flex-1 p-8 border rounded-lg flex flex-col items-center gap-3 transition-all ${
+                  paymentMethod === "cod" 
+                  ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d] shadow-[0_0_15px_rgba(244,213,141,0.2)]" 
+                  : "border-[#708d81]/30 text-[#708d81] hover:bg-[#708d81]/10"
+                }`}
+              >
+                <FaMoneyBillWave size={32} />
+                <span className="font-bold text-lg">Cash on Delivery</span>
+                <span className="text-xs text-[#bf0603] font-bold bg-[#bf0603]/10 px-2 py-1 rounded">+ ₹50 Handling Fee</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* --- STEP 3: REVIEW --- */}
+        {currentStep === 3 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">Order Summary</h3>
+            <div className="bg-[#0f1b32] p-6 rounded-lg border border-[#708d81]/30">
+              
+              {/* Product List */}
+              <div className="space-y-3 mb-4">
+                {cart.map(item => (
+                  <div key={item.id} className="flex justify-between items-center py-2 border-b border-[#708d81]/20">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[#f4d58d] font-bold">{item.quantity}x</span>
+                      <span>{item.name}</span>
+                    </div>
+                    <span className="font-mono">₹{item.price * item.quantity}</span>
+                  </div>
                 ))}
               </div>
 
-              <div className="mt-6 text-right border-t border-[#708d81]/20 pt-4">
-                <p className="text-lg font-bold text-[#f2e8cf]">
-                  Total:{" "}
-                  <span className="text-[#f4d58d]">
-                    ₹{totalPrice.toLocaleString()}
-                  </span>
-                </p>
+              {/* Delivery Address Preview */}
+              <div className="mb-4 p-3 bg-[#001427] rounded text-sm text-[#708d81]">
+                <p className="font-bold text-[#f2e8cf] mb-1">Delivering to:</p>
+                {addresses.find(a => a.id === selectedAddressId)?.name}, <br/>
+                {addresses.find(a => a.id === selectedAddressId)?.street}, {addresses.find(a => a.id === selectedAddressId)?.city}
               </div>
-            </motion.div>
 
-            {/* Right Column: Steps */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-[#001427]/20 p-6 rounded-xl border border-[#708d81]/20"
-            >
-              {currentStep === 1 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">
-                    Shipping Information
-                  </h3>
-                  <input
-                    type="text"
-                    name="address"
-                    placeholder="Street Address"
-                    value={shippingInfo.address}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                  />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      name="city"
-                      placeholder="City"
-                      value={shippingInfo.city}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      name="state"
-                      placeholder="State"
-                      value={shippingInfo.state}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    name="zip"
-                    placeholder="ZIP Code"
-                    value={shippingInfo.zip}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                  />
-                </motion.div>
-              )}
-
-              {currentStep === 2 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">
-                    Payment Method
-                  </h3>
-                  <div className="flex gap-4 mb-4">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={() => setPaymentMethod("card")}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border ${
-                        paymentMethod === "card"
-                          ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d]"
-                          : "border-[#708d81]/40 text-[#708d81]"
-                      }`}
-                    >
-                      <FaCreditCard />
-                      Card
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={() => setPaymentMethod("cod")}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border ${
-                        paymentMethod === "cod"
-                          ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d]"
-                          : "border-[#708d81]/40 text-[#708d81]"
-                      }`}
-                    >
-                      <FaMoneyBillWave />
-                      Cash on Delivery
-                    </motion.button>
-                  </div>
-
-                  {paymentMethod === "card" && (
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        name="nameOnCard"
-                        placeholder="Name on Card"
-                        value={paymentInfo.nameOnCard}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        placeholder="Card Number"
-                        value={paymentInfo.cardNumber}
-                        onChange={handleCardNumberChange}
-                        className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <input
-                          type="text"
-                          name="expiry"
-                          placeholder="MM/YY"
-                          value={paymentInfo.expiry}
-                          onChange={handleExpiryChange}
-                          className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          name="cvv"
-                          placeholder="CVV"
-                          value={paymentInfo.cvv}
-                          onChange={handleCVVChange}
-                          className="w-full px-4 py-2 bg-[#001427]/30 border border-[#708d81]/40 rounded-lg text-[#f2e8cf] placeholder-[#708d81] focus:border-[#f4d58d] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === "cod" && (
-                    <div className="p-4 bg-[#001427]/30 rounded-lg border border-[#708d81]/40 text-[#f2e8cf]">
-                      <p>Pay with cash when your order is delivered.</p>
-                      <p className="text-[#f4d58d] font-medium mt-2">
-                        An additional ₹50 will be charged for COD orders.
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-              {currentStep === 3 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-6"
-                >
-                  <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">
-                    Review Your Order
-                  </h3>
-
-                  <div>
-                    <h4 className="text-lg font-medium text-[#f4d58d] mb-2">
-                      Shipping Information
-                    </h4>
-                    <div className="bg-[#001427]/30 p-4 rounded-lg border border-[#708d81]/40 text-[#f2e8cf]">
-                      <p>{shippingInfo.address}</p>
-                      <p>
-                        {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-medium text-[#f4d58d] mb-2">
-                      Payment Method
-                    </h4>
-                    <div className="bg-[#001427]/30 p-4 rounded-lg border border-[#708d81]/40 text-[#f2e8cf]">
-                      {paymentMethod === "card" ? (
-                        <>
-                          <p>Credit/Debit Card</p>
-                          <p className="text-sm text-[#708d81] mt-1">
-                            **** **** **** {paymentInfo.cardNumber.slice(-4)}
-                          </p>
-                        </>
-                      ) : (
-                        <p>Cash on Delivery</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-medium text-[#f4d58d] mb-2">
-                      Order Total
-                    </h4>
-                    <div className="bg-[#001427]/30 p-4 rounded-lg border border-[#708d81]/40">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-[#f2e8cf]">Subtotal:</span>
-                        <span className="text-[#f2e8cf]">
-                          ₹{totalPrice.toLocaleString()}
-                        </span>
-                      </div>
-                      {paymentMethod === "cod" && (
-                        <div className="flex justify-between mb-2">
-                          <span className="text-[#f2e8cf]">COD Fee:</span>
-                          <span className="text-[#f2e8cf]">₹50</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between border-t border-[#708d81]/40 pt-2">
-                        <span className="text-[#f4d58d] font-bold">Total:</span>
-                        <span className="text-[#f4d58d] font-bold">
-                          ₹{(paymentMethod === "cod" ? totalPrice + 50 : totalPrice).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              <div className="flex justify-between mt-8">
-                {currentStep > 1 ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="button"
-                    onClick={prevStep}
-                    className="border border-[#708d81]/40 text-[#f4d58d] px-6 py-2 rounded-lg font-medium hover:border-[#bf0603] hover:text-[#bf0603] transition-colors"
-                  >
-                    Back
-                  </motion.button>
-                ) : (
-                  <div></div>
-                )}
-
-                {currentStep < 3 ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="button"
-                    onClick={nextStep}
-                    className="bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] px-6 py-2 rounded-lg font-medium shadow-lg"
-                  >
-                    Continue
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] px-6 py-2 rounded-lg font-medium shadow-lg disabled:opacity-70"
-                  >
-                    {loading ? (
-                      "Processing..."
-                    ) : (
-                      <>
-                        Place Order - ₹
-                        {paymentMethod === "cod" ? totalPrice + 50 : totalPrice}
-                      </>
-                    )}
-                  </motion.button>
-                )}
+              {/* Price Breakdown */}
+              <div className="flex justify-between mt-4 text-[#708d81]">
+                <span>Subtotal</span>
+                <span>₹{totalPrice}</span>
               </div>
-            </motion.div>
-          </div>
+              {paymentMethod === 'cod' && (
+                <div className="flex justify-between text-[#708d81]">
+                  <span>COD Fee</span>
+                  <span>₹50</span>
+                </div>
+              )}
+              <div className="flex justify-between mt-4 pt-4 border-t border-[#708d81]/50 text-xl font-bold text-[#f4d58d]">
+                <span>Total Amount</span>
+                <span>₹{paymentMethod === 'cod' ? totalPrice + 50 : totalPrice}</span>
+              </div>
+            </div>
+          </motion.div>
         )}
+
+        {/* --- NAVIGATION BUTTONS --- */}
+        <div className="flex justify-between mt-8 pt-6 border-t border-[#708d81]/20">
+          <button 
+            disabled={currentStep === 1}
+            onClick={prevStep}
+            className={`px-6 py-3 rounded-lg border border-[#708d81] font-medium transition ${currentStep === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[#708d81]/20 text-[#f4d58d]'}`}
+          >
+            Back
+          </button>
+
+          {currentStep < 3 ? (
+            <button 
+              onClick={nextStep}
+              disabled={isAddingNew} 
+              className="bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-red-900/50 transition transform hover:scale-105"
+            >
+              Continue
+            </button>
+          ) : (
+            <button 
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-[#f4d58d] text-black px-10 py-3 rounded-lg font-bold hover:bg-[#e0c070] shadow-[0_0_20px_rgba(244,213,141,0.3)] transition transform hover:scale-105 flex items-center gap-2"
+            >
+              {loading ? "Processing..." : `Pay ₹${paymentMethod === 'cod' ? totalPrice + 50 : totalPrice}`}
+            </button>
+          )}
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

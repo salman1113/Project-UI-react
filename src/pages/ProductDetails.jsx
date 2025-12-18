@@ -12,7 +12,6 @@ const ProductDetails = () => {
   const { id } = useParams();
   const { user } = useContext(AuthContext);
   
-  // NOTE: Changed 'cartItems' to 'cart' to match your Context definition
   const { addToCart, cart } = useContext(CartContext); 
   const { addToWishlist, removeFromWishlist, wishlist } = useContext(WishlistContext);
 
@@ -24,7 +23,6 @@ const ProductDetails = () => {
 
   // --- FETCH PRODUCT ---
   useEffect(() => {
-    // Updated to Django API endpoint
     axios
       .get(`http://localhost:8000/api/products/${id}/`)
       .then((res) => setProduct(res.data))
@@ -34,34 +32,32 @@ const ProductDetails = () => {
       });
   }, [id]);
 
+  // ✅ CHECK STOCK STATUS
+  const isOutOfStock = product?.count <= 0;
+
   const handleAddToCart = () => {
     if (!user) {
-      toast.warn(
-        <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">⚠️</span> Please login to add items to cart
-        </div>
-      );
+      toast.warn("Please login to add items to cart");
       return;
     }
     
-    // Call Context directly - it handles the API and Duplication checks
+    // ✅ Stock Check before adding
+    if (isOutOfStock) {
+        toast.error("Sorry, this item is out of stock");
+        return;
+    }
+    
     addToCart(product);
   };
 
   const handleWishlist = () => {
     if (!user) {
-      toast.warn(
-        <div className="flex items-center text-[#f4d58d]">
-          <span className="mr-2">⚠️</span> Please login to manage wishlist
-        </div>
-      );
+      toast.warn("Please login to manage wishlist");
       return;
     }
 
     if (isInWishlist) {
       removeFromWishlist(product.id);
-      // Removed generic toast here as context usually handles it, 
-      // but if you want specific custom toast you can keep it.
     } else {
       addToWishlist(product);
     }
@@ -69,20 +65,16 @@ const ProductDetails = () => {
 
   if (!product) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="text-center py-20 text-xl text-[#708d81]"
-      >
+      <div className="text-center py-20 text-xl text-[#708d81]">
         Loading product details...
-      </motion.div>
+      </div>
     );
   }
 
-  // Safe image handling (if images array is empty)
+  // Safe image handling
   const images = product.images && product.images.length > 0 
                  ? product.images 
-                 : ["https://via.placeholder.com/500"];
+                 : ["/default-product.png"];
 
   return (
     <motion.div
@@ -110,8 +102,7 @@ const ProductDetails = () => {
                   initial={{ scale: 0.9, opacity: 0.6 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.3 + index * 0.05, duration: 0.3 }}
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 10px rgba(191, 6, 3, 0.5)" }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.05 }}
                   onClick={() => setSelectedImage(index)}
                   className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
                     selectedImage === index
@@ -121,8 +112,8 @@ const ProductDetails = () => {
                 >
                   <img
                     src={img}
-                    alt={`${product.name} thumbnail ${index}`}
-                    className="w-16 sm:w-full h-16 sm:h-20 object-cover"
+                    alt={`Thumbnail ${index}`}
+                    className={`w-16 sm:w-full h-16 sm:h-20 object-cover ${isOutOfStock ? 'grayscale' : ''}`}
                   />
                 </motion.div>
               ))}
@@ -131,10 +122,6 @@ const ProductDetails = () => {
 
           <div className="flex-1 w-full">
             <motion.div
-              key={selectedImage}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
               className="relative overflow-hidden rounded-xl bg-[#001427]/10 border border-[#708d81]/20 shadow-lg w-full"
             >
               <AnimatePresence mode="wait">
@@ -146,31 +133,27 @@ const ProductDetails = () => {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="w-full h-64 sm:h-80 md:h-96 object-contain p-4"
+                  className={`w-full h-64 sm:h-80 md:h-96 object-contain p-4 ${isOutOfStock ? 'grayscale opacity-70' : ''}`}
                 />
               </AnimatePresence>
               
+              {/* OUT OF STOCK BADGE ON IMAGE */}
+              {isOutOfStock && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <span className="bg-[#bf0603] text-white px-4 py-2 text-lg font-bold rounded shadow-lg transform -rotate-12 border border-white/20">
+                        OUT OF STOCK
+                    </span>
+                </div>
+              )}
+
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
                 onClick={handleWishlist}
-                className="absolute top-4 right-4 p-2 rounded-full backdrop-blur-sm bg-black/30 hover:bg-black/50 transition-all"
+                className="absolute top-4 right-4 p-2 rounded-full backdrop-blur-sm bg-black/30 hover:bg-black/50 transition-all z-10"
               >
                 {isInWishlist ? (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 15 }}
-                  >
-                    <AiFillHeart size={24} className="text-[#bf0603]" />
-                  </motion.div>
+                  <AiFillHeart size={24} className="text-[#bf0603]" />
                 ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <AiOutlineHeart size={24} className="text-[#f4d58d]" />
-                  </motion.div>
+                  <AiOutlineHeart size={24} className="text-[#f4d58d]" />
                 )}
               </motion.button>
             </motion.div>
@@ -184,108 +167,67 @@ const ProductDetails = () => {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="space-y-6 md:space-y-8 w-full"
         >
-          <motion.div
-            whileHover={{ x: 5 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
+          <motion.div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#f4d58d] mb-2">
               {product.name}
             </h1>
-            <motion.p 
-              whileHover={{ scale: 1.02 }}
-              className="text-[#708d81] uppercase text-xs sm:text-sm font-medium tracking-wider"
-            >
+            <p className="text-[#708d81] uppercase text-xs sm:text-sm font-medium tracking-wider">
               {product.category}
-            </motion.p>
-          </motion.div>
-
-          <motion.div 
-            className="flex items-center gap-4"
-            whileHover={{ scale: 1.01 }}
-          >
-            <motion.p 
-              className="text-xl sm:text-2xl font-bold text-[#f2e8cf]"
-              whileHover={{ scale: 1.05 }}
-            >
-              ₹{Number(product.price).toLocaleString()}
-            </motion.p>
-            {product.originalPrice && (
-              <motion.p 
-                className="text-base sm:text-lg text-[#708d81] line-through"
-                whileHover={{ scale: 1.05 }}
-              >
-                ₹{Number(product.originalPrice).toLocaleString()}
-              </motion.p>
-            )}
-          </motion.div>
-
-          <motion.div 
-            className="py-4 border-y border-[#708d81]/20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <p className="text-[#f2e8cf]/90 leading-relaxed text-sm sm:text-base">
-              {product.description}
             </p>
           </motion.div>
 
+          <motion.div className="flex items-center gap-4">
+            <p className="text-xl sm:text-2xl font-bold text-[#f2e8cf]">
+              ₹{Number(product.price).toLocaleString()}
+            </p>
+          </motion.div>
+
+          <div className="py-4 border-y border-[#708d81]/20">
+            <p className="text-[#f2e8cf]/90 leading-relaxed text-sm sm:text-base">
+              {product.description}
+            </p>
+          </div>
+
+          {/* ✅ UPDATED ADD TO CART BUTTON */}
           <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            whileHover={{ 
-              scale: 1.02,
-              boxShadow: "0 0 15px rgba(191, 6, 3, 0.7)"
-            }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={!isOutOfStock ? { scale: 1.02 } : {}}
+            whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
             onClick={handleAddToCart}
-            className="w-full bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] px-6 py-3 sm:py-4 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all text-sm sm:text-base"
+            disabled={isOutOfStock}
+            className={`w-full px-6 py-3 sm:py-4 rounded-lg font-medium shadow-lg transition-all text-sm sm:text-base ${
+                isOutOfStock 
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed border border-gray-600" 
+                : "bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] hover:shadow-xl"
+            }`}
           >
-            Add to Cart
+            {isOutOfStock ? "Out of Stock" : "Add to Cart"}
           </motion.button>
 
-          <motion.div 
-            className="pt-4 sm:pt-6 border-t border-[#708d81]/20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-          >
+          <div className="pt-4 sm:pt-6 border-t border-[#708d81]/20">
             <div className="space-y-2 sm:space-y-3">
-              <motion.p 
-                className="text-[#708d81] text-sm sm:text-base"
-                whileHover={{ x: 3 }}
-              >
-                <span className="text-[#f4d58d] font-medium">Availability:</span> In Stock
-              </motion.p>
+              <p className="text-[#708d81] text-sm sm:text-base">
+                <span className="text-[#f4d58d] font-medium">Availability: </span> 
+                {isOutOfStock ? (
+                    <span className="text-red-500 font-bold">Out of Stock</span>
+                ) : (
+                    <span className="text-green-400">In Stock</span>
+                )}
+              </p>
               
-              {/* If you store specifications in your Django JSONField, this will work. 
-                  If not, you can remove this block. */}
               {product.specifications && (
-                <motion.div 
-                  className="mt-3 sm:mt-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                >
+                <div className="mt-3 sm:mt-4">
                   <h3 className="text-[#f4d58d] font-medium mb-2 text-sm sm:text-base">Specifications:</h3>
                   <ul className="text-[#f2e8cf]/80 space-y-1 text-xs sm:text-sm">
                     {Object.entries(product.specifications).map(([key, value], index) => (
-                      <motion.li 
-                        key={key}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.9 + index * 0.05 }}
-                        whileHover={{ x: 3 }}
-                      >
+                      <li key={key}>
                         <span className="text-[#708d81]">{key}:</span> {value}
-                      </motion.li>
+                      </li>
                     ))}
                   </ul>
-                </motion.div>
+                </div>
               )}
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
     </motion.div>
