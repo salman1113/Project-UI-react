@@ -16,7 +16,7 @@ const ProductDetails = () => {
   const { addToWishlist, removeFromWishlist, wishlist } = useContext(WishlistContext);
 
   const [product, setProduct] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Checks
   const isInWishlist = wishlist?.some((item) => item.id === Number(id));
@@ -35,13 +35,39 @@ const ProductDetails = () => {
   // ✅ CHECK STOCK STATUS
   const isOutOfStock = product?.count <= 0;
 
+  // ✅ HELPER: Extract Image URLs correctly
+  const getGalleryImages = () => {
+    if (!product) return [];
+
+    let images = [];
+
+    // 1. Check New Gallery Array (List of Objects {id, url})
+    if (product.images && product.images.length > 0) {
+        images = product.images.map(img => {
+            // If it's an object, take .url, otherwise take the string itself
+            return (typeof img === 'object' && img.url) ? img.url : img;
+        });
+    } 
+    // 2. Fallback to Legacy Single Image
+    else if (product.image) {
+        images = [product.image];
+    } 
+    // 3. Fallback Placeholder
+    else {
+        images = ["https://via.placeholder.com/500?text=No+Image"];
+    }
+
+    return images;
+  };
+
+  const gallery = getGalleryImages(); // Get the processed list of URLs
+
   const handleAddToCart = () => {
     if (!user) {
       toast.warn("Please login to add items to cart");
       return;
     }
     
-    // ✅ Stock Check before adding
     if (isOutOfStock) {
         toast.error("Sorry, this item is out of stock");
         return;
@@ -71,11 +97,6 @@ const ProductDetails = () => {
     );
   }
 
-  // Safe image handling
-  const images = product.images && product.images.length > 0 
-                 ? product.images 
-                 : ["/default-product.png"];
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -90,54 +111,55 @@ const ProductDetails = () => {
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="flex flex-col sm:flex-row gap-4 w-full"
+          className="flex flex-col-reverse sm:flex-row gap-4 w-full"
         >
-          {images.length > 1 && (
+          {/* Thumbnails (Left side on Desktop, Bottom on Mobile) */}
+          {gallery.length > 1 && (
             <motion.div 
-              className="flex sm:flex-row lg:flex-col gap-2 sm:gap-3 w-full sm:w-20 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0"
+              className="flex sm:flex-col gap-2 sm:gap-3 w-full sm:w-20 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0"
             >
-              {images.map((img, index) => (
+              {gallery.map((imgUrl, index) => (
                 <motion.div
                   key={index}
                   initial={{ scale: 0.9, opacity: 0.6 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.3 + index * 0.05, duration: 0.3 }}
                   whileHover={{ scale: 1.05 }}
-                  onClick={() => setSelectedImage(index)}
-                  className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
-                    selectedImage === index
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/5 ${
+                    selectedImageIndex === index
                       ? "border-[#bf0603]"
                       : "border-transparent hover:border-[#708d81]/40"
                   }`}
                 >
                   <img
-                    src={img}
+                    src={imgUrl}
                     alt={`Thumbnail ${index}`}
-                    className={`w-16 sm:w-full h-16 sm:h-20 object-cover ${isOutOfStock ? 'grayscale' : ''}`}
+                    className={`w-full h-full object-contain p-1 ${isOutOfStock ? 'grayscale' : ''}`}
                   />
                 </motion.div>
               ))}
             </motion.div>
           )}
 
-          <div className="flex-1 w-full">
+          {/* Main Large Image */}
+          <div className="flex-1 w-full relative">
             <motion.div
-              className="relative overflow-hidden rounded-xl bg-[#001427]/10 border border-[#708d81]/20 shadow-lg w-full"
+              className="relative overflow-hidden rounded-xl bg-[#001427]/10 border border-[#708d81]/20 shadow-lg w-full aspect-square flex items-center justify-center bg-white/5"
             >
               <AnimatePresence mode="wait">
                 <motion.img
-                  key={selectedImage}
-                  src={images[selectedImage]}
+                  key={selectedImageIndex}
+                  src={gallery[selectedImageIndex]}
                   alt={product.name}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className={`w-full h-64 sm:h-80 md:h-96 object-contain p-4 ${isOutOfStock ? 'grayscale opacity-70' : ''}`}
+                  className={`max-w-full max-h-full object-contain p-4 ${isOutOfStock ? 'grayscale opacity-70' : ''}`}
                 />
               </AnimatePresence>
               
-              {/* OUT OF STOCK BADGE ON IMAGE */}
+              {/* OUT OF STOCK BADGE */}
               {isOutOfStock && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                     <span className="bg-[#bf0603] text-white px-4 py-2 text-lg font-bold rounded shadow-lg transform -rotate-12 border border-white/20">
@@ -183,12 +205,12 @@ const ProductDetails = () => {
           </motion.div>
 
           <div className="py-4 border-y border-[#708d81]/20">
-            <p className="text-[#f2e8cf]/90 leading-relaxed text-sm sm:text-base">
+            <p className="text-[#f2e8cf]/90 leading-relaxed text-sm sm:text-base whitespace-pre-line">
               {product.description}
             </p>
           </div>
 
-          {/* ✅ UPDATED ADD TO CART BUTTON */}
+          {/* ADD TO CART BUTTON */}
           <motion.button
             whileHover={!isOutOfStock ? { scale: 1.02 } : {}}
             whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
@@ -213,19 +235,6 @@ const ProductDetails = () => {
                     <span className="text-green-400">In Stock</span>
                 )}
               </p>
-              
-              {product.specifications && (
-                <div className="mt-3 sm:mt-4">
-                  <h3 className="text-[#f4d58d] font-medium mb-2 text-sm sm:text-base">Specifications:</h3>
-                  <ul className="text-[#f2e8cf]/80 space-y-1 text-xs sm:text-sm">
-                    {Object.entries(product.specifications).map(([key, value], index) => (
-                      <li key={key}>
-                        <span className="text-[#708d81]">{key}:</span> {value}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           </div>
         </motion.div>

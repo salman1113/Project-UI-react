@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom"; // Added Link
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
@@ -30,11 +30,25 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // ✅ FIX: Admin Redirection Logic Logic Here
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await loginUserWithAPI(form, navigate, toast);
+      // 1. Call API and WAIT for userData response
+      const userData = await loginUserWithAPI(form, null, toast); 
+      
+      // 2. Check Role & Redirect
+      if (userData) {
+          if (userData.is_superuser || userData.role === 'admin') {
+              console.log("Redirecting to Admin...");
+              navigate("/admin"); // 👑 Go to Admin Dashboard
+          } else {
+              console.log("Redirecting to Home...");
+              navigate("/"); // 🛒 Go to User Home
+          }
+      }
+      
     } catch (error) {
       console.error("Login failed", error);
     } finally {
@@ -110,7 +124,7 @@ const Login = () => {
                 </button>
             </div>
             
-            {/* 🔥 UPDATED POSITION: Forgot Password Link 🔥 */}
+            {/* Forgot Password Link */}
             <div className="flex justify-end mt-2">
                 <Link 
                     to="/forgot-password" 
@@ -145,7 +159,7 @@ const Login = () => {
             )}
           </motion.button>
 
-          {/* --- GOOGLE LOGIN SECTION START --- */}
+          {/* --- GOOGLE LOGIN --- */}
           <div className="mt-4 flex flex-col gap-4">
             <div className="relative flex items-center justify-center">
               <div className="border-t border-white/20 w-full"></div>
@@ -164,7 +178,6 @@ const Login = () => {
               Continue with Google
             </motion.button>
           </div>
-          {/* --- GOOGLE LOGIN SECTION END --- */}
 
         </form>
 

@@ -1,34 +1,27 @@
-import { createContext, useEffect, useState, useMemo, useCallback } from "react";
+import { createContext, useEffect, useState, useMemo, useCallback, useContext } from "react";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode"; 
+import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 // Base URL for your Django Backend
 const API_URL = "http://localhost:8000/api";
 
-export const AuthContext = createContext({
-  user: null,
-  tokens: null,
-  isLoading: true,
-  loginUser: () => { },
-  logoutUser: () => { },
-  signupUser: () => { },
-  loginUserWithAPI: () => { },
-  googleLogin: () => { },
-  // pass Functions
-  updateProfile: () => { },
-  changePassword: () => { },
-  requestPasswordReset: () => { },
-  confirmPasswordReset: () => { },
-});
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [tokens, setTokens] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // ✅ FIX 1: Lazy Initialization
+  const [user, setUser] = useState(() =>
+    localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null
+  );
+  const [tokens, setTokens] = useState(() =>
+    localStorage.getItem("tokens") ? JSON.parse(localStorage.getItem("tokens")) : null
+  );
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Helper: Check if token is valid
+  const navigate = useNavigate();
+
+  // Helper: Check token validity
   const isTokenValid = (token) => {
     if (!token) return false;
     try {
@@ -40,7 +33,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Internal helper to set state and localStorage
   const loginUser = useCallback((userData, tokenData) => {
     setUser(userData);
     setTokens(tokenData);
@@ -53,14 +45,15 @@ export const AuthProvider = ({ children }) => {
     setTokens(null);
     localStorage.removeItem("tokens");
     localStorage.removeItem("user");
-  }, []);
+    navigate("/login");
+  }, [navigate]);
 
   // --- SIGNUP ---
   const signupUser = useCallback(async (form, navigate, toast) => {
-    const { name, email, password } = form; 
+    const { name, email, password } = form;
     try {
       await axios.post(`${API_URL}/register/`, {
-        username: name, 
+        username: name,
         email: email,
         password: password,
       });
@@ -73,44 +66,66 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // --- LOGIN (Standard) ---
-  const loginUserWithAPI = useCallback(async (form, navigate, toast) => {
+  // --- LOGIN FUNCTION (Updated with Console Log) ---
+  const loginUserWithAPI = useCallback(async (form, navigateUnused, toast) => {
     const { username, password } = form;
+
+    // 1. Basic Validation
     if (!username || !password) {
       toast.warn("Please enter username and password");
       return;
     }
+
     try {
+      // 2. Call API
       const res = await axios.post(`${API_URL}/login/`, { username, password });
+
+      // 👇👇👇 ഇതാണ് നമ്മൾ ചേർത്ത പുതിയ വരി (DEBUGGING) 👇👇👇
+      console.log("🔴 LOGIN RESPONSE FROM BACKEND:", res.data);
+      // 👆👆👆 കൺസോളിൽ ഇത് നോക്കിയാൽ വിവരം കിട്ടും 👆👆👆
+
       const { access, refresh } = res.data;
-      
+
+      // 3. Token Check: ടോക്കൺ ഇല്ലെങ്കിൽ അത് നിർത്തിവെക്കും
+      if (!access) {
+        toast.warn("Login Failed: No Token Received. Check Console.");
+        return;
+      }
+
+      // 4. User Data Setup
       let userData = {};
       if (res.data.user) {
-         const userObj = res.data.user;
-         userData = {
-            id: userObj.pk || userObj.id,
-            username: userObj.username,
-            email: userObj.email,
-            name: userObj.name || userObj.username, 
-            image: userObj.image,
-            role: "user",       
-         };
+        const userObj = res.data.user;
+        const isAdmin = userObj.is_superuser || userObj.role === 'admin';
+        userData = {
+          id: userObj.pk || userObj.id,
+          username: userObj.username,
+          email: userObj.email,
+          name: userObj.name || userObj.username,
+          image: userObj.image,
+          role: isAdmin ? "admin" : "user",
+          is_superuser: isAdmin
+        };
       } else {
-         const decoded = jwtDecode(access);
-         userData = {
-            id: decoded.user_id,
-            username: username,
-            email: "", 
-            name: username,
-            image: null,
-            role: "user",       
-         };
+        const decoded = jwtDecode(access);
+        userData = {
+          id: decoded.user_id,
+          username: username,
+          role: "user",
+        };
       }
+
+      // 5. Save & Update State
       loginUser(userData, { access, refresh });
-      toast.success("Login successful");
-      navigate("/");
+      toast.success("Login Successful!");
+
+      return userData;
+
     } catch (err) {
+      console.error("Login Error:", err);
       const errorMessage = err.response?.data?.detail || "Invalid credentials";
       toast.error(errorMessage);
+      throw err;
     }
   }, [loginUser]);
 
@@ -124,55 +139,48 @@ export const AuthProvider = ({ children }) => {
 
       if (access) {
         let userData = {};
+        const isAdmin = data.user?.is_superuser || data.user?.role === 'admin';
+
         if (data.user) {
-            userData = {
-                id: data.user.pk || data.user.id,
-                username: data.user.username,
-                email: data.user.email,
-                name: data.user.name || data.user.username,
-                image: data.user.image,
-                role: "user"
-            };
+          userData = {
+            id: data.user.pk || data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+            name: data.user.name || data.user.username,
+            image: data.user.image,
+            role: isAdmin ? "admin" : "user",
+            is_superuser: isAdmin
+          };
         } else {
-             try {
-                const decoded = jwtDecode(access);
-                userData = {
-                    id: decoded.user_id,
-                    username: decoded.username || "Google User",
-                    email: decoded.email || "",
-                    name: decoded.username || "Google User",
-                    role: "user"
-                };
-             } catch (e) {
-                userData = { username: "Google User", name: "Google User", role: "user" };
-             }
+          userData = { username: "Google User", role: "user" };
         }
         loginUser(userData, { access, refresh });
         toast.success("Google Login Successful!");
-        navigate("/");
+
+        if (userData.role === "admin") navigate("/admin");
+        else navigate("/");
       }
     } catch (err) {
       if (err.response?.data?.non_field_errors) {
         toast.error(err.response.data.non_field_errors[0]);
       } else {
-        toast.error("Google Login Failed. Please try again.");
+        toast.error("Google Login Failed.");
       }
     }
   }, [loginUser]);
 
-  // NEW: UPDATE PROFILE (Name, etc.) ---
+  // --- UPDATE PROFILE ---
   const updateProfile = useCallback(async (profileData) => {
     try {
       const token = tokens?.access;
       const response = await axios.patch(`${API_URL}/user/`, profileData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // Update local state with new info
+
       const updatedUser = { ...user, ...response.data };
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
-      
+
       toast.success("Profile updated successfully!");
     } catch (err) {
       console.error(err);
@@ -181,7 +189,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [tokens, user]);
 
-  // NEW: CHANGE PASSWORD (For Logged In Users) ---
+  // --- CHANGE PASSWORD ---
   const changePassword = useCallback(async (passwordData) => {
     try {
       const token = tokens?.access;
@@ -190,58 +198,40 @@ export const AuthProvider = ({ children }) => {
       });
       toast.success("Password changed successfully!");
     } catch (err) {
-      console.error(err);
       toast.error(err.response?.data?.detail || "Password change failed");
       throw err;
     }
   }, [tokens]);
 
-  // NEW: REQUEST PASSWORD RESET (Forgot Password) ---
+  // --- PASSWORD RESET ---
   const requestPasswordReset = useCallback(async (email) => {
     try {
       await axios.post(`${API_URL}/password/reset/`, { email });
-      toast.success("Password reset link sent to your email!");
+      toast.success("Password reset link sent!");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to send reset link. Please check the email.");
+      toast.error("Failed to send reset link.");
     }
   }, []);
 
-  // NEW: CONFIRM PASSWORD RESET (From Email Link) ---
   const confirmPasswordReset = useCallback(async (data) => {
     try {
       await axios.post(`${API_URL}/password/reset/confirm/`, data);
-      toast.success("Password has been reset successfully! Please login.");
+      toast.success("Password has been reset successfully!");
       return true;
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to reset password. Link might be expired.");
+      toast.error("Failed to reset password.");
       return false;
     }
   }, []);
 
-  // --- RESTORE SESSION ---
+  // --- TOKEN VALIDATION EFFECT ---
   useEffect(() => {
-    const loadUser = () => {
-      const storedTokens = localStorage.getItem("tokens");
-      const storedUser = localStorage.getItem("user");
-
-      if (storedTokens && storedUser) {
-        const parsedTokens = JSON.parse(storedTokens);
-        const parsedUser = JSON.parse(storedUser);
-
-        if (parsedTokens.access && isTokenValid(parsedTokens.access)) {
-          setUser(parsedUser);
-          setTokens(parsedTokens);
-        } else {
-          logoutUser();
-        }
+    if (tokens && tokens.access) {
+      if (!isTokenValid(tokens.access)) {
+        logoutUser();
       }
-      setIsLoading(false);
-    };
-
-    loadUser();
-  }, [logoutUser]);
+    }
+  }, [tokens, logoutUser]);
 
   const contextValue = useMemo(() => ({
     user,
@@ -252,7 +242,6 @@ export const AuthProvider = ({ children }) => {
     signupUser,
     loginUserWithAPI,
     googleLogin,
-    // Add new functions to context
     updateProfile,
     changePassword,
     requestPasswordReset,
@@ -266,21 +255,45 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// --- AXIOS INTERCEPTOR ---
-export const useAxios = () => {
-  const storedTokens = localStorage.getItem("tokens");
-  const token = storedTokens ? JSON.parse(storedTokens)?.access : null;
+// ✅ FIXED useAxios HOOK
+// Tokens are read directly from LocalStorage to prevent 401 errors on refresh
+// ✅ FIXED useAxios (With Debugging)
+// AuthContext.jsx -ന്റെ ഏറ്റവും താഴെ
 
-  const axiosInstance = useMemo(() => {
+export const useAxios = () => {
+  const { logoutUser } = useContext(AuthContext);
+
+  return useMemo(() => {
     const instance = axios.create({ baseURL: API_URL });
+
     instance.interceptors.request.use(async (config) => {
-      if (token) {
-        const isJwt = token.split('.').length === 3;
-        config.headers.Authorization = isJwt ? `Bearer ${token}` : `Token ${token}`;
+      const storedTokens = localStorage.getItem("tokens");
+
+      if (storedTokens) {
+        const parsedTokens = JSON.parse(storedTokens);
+        const token = parsedTokens?.access || parsedTokens?.key;
+
+        if (token) {
+          // ✅ JWT ആണെങ്കിൽ 'Bearer', അല്ലെങ്കിൽ 'Token' (Django Default)
+          const isJWT = token.startsWith('eyJ');
+          config.headers.Authorization = isJWT ? `Bearer ${token}` : `Token ${token}`;
+        }
       }
       return config;
     }, (error) => Promise.reject(error));
+
+    instance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // 401 Unauthorized വന്നാൽ ലൂപ്പ് ഒഴിവാക്കാൻ ലോഗൗട്ട് ചെയ്യുന്നു
+        if (error.response && error.response.status === 401) {
+          console.warn("Unauthorized Access! Redirecting to login...");
+          logoutUser();
+        }
+        return Promise.reject(error);
+      }
+    );
+
     return instance;
-  }, [token]);
-  return axiosInstance;
+  }, [logoutUser]);
 };

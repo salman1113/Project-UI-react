@@ -3,9 +3,9 @@ import { WishlistContext } from "../context/WishlistContext";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import { useNavigate, Link } from "react-router-dom"; // Link Import ചെയ്തു
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FiEye } from "react-icons/fi"; // Eye Icon Import ചെയ്തു
+import { FiEye } from "react-icons/fi";
 
 const Wishlist = () => {
   const { user, isLoading } = useContext(AuthContext);
@@ -19,6 +19,27 @@ const Wishlist = () => {
     accent: "#bf0603",
     secondary: "#708d81",
     highlight: "#f4d58d"
+  };
+
+  // ✅ HELPER: Get Image URL Safely
+  const getDisplayImage = (product) => {
+    // 1. Check images array
+    if (product?.images && product.images.length > 0) {
+        const firstImg = product.images[0];
+        // If it's an object (New Backend), take .url
+        if (typeof firstImg === 'object' && firstImg.url) {
+            return firstImg.url;
+        }
+        // If it's a string (Old Backend/Link), use directly
+        if (typeof firstImg === 'string') {
+            return firstImg;
+        }
+    }
+    // 2. Fallback to legacy single image field
+    if (product?.image) return product.image;
+    
+    // 3. Fallback Placeholder
+    return "/default-product.png";
   };
 
   const handleMoveToCart = async (product) => {
@@ -107,7 +128,8 @@ const Wishlist = () => {
                     {/* Image Section (Clickable) */}
                     <Link to={`/products/${product.id}`} className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden block">
                         <img
-                          src={product.images && product.images.length > 0 ? product.images[0] : '/default-product.png'}
+                          // 👇 Updated Image Source Logic
+                          src={getDisplayImage(product)}
                           alt={product.name}
                           className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${isOutOfStock ? 'grayscale opacity-50' : ''}`}
                           onError={(e) => { e.target.src = "/default-product.png"; }}
@@ -157,7 +179,7 @@ const Wishlist = () => {
                         </motion.button>
                     </div>
 
-                    {/* 👇 NEW: View Details Button (Secondary Option) */}
+                    {/* View Details Button (Secondary Option) */}
                     <Link 
                         to={`/products/${product.id}`}
                         className="text-center w-full py-2 rounded text-sm border border-[#708d81] text-[#708d81] hover:bg-[#708d81] hover:text-[#001427] transition-all"

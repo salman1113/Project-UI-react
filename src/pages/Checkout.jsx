@@ -4,7 +4,7 @@ import { AuthContext, useAxios } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FaCreditCard, FaMoneyBillWave, FaMapMarkerAlt, FaPlus, FaTrash } from "react-icons/fa";
+import { FaCreditCard, FaMoneyBillWave, FaMapMarkerAlt, FaPlus } from "react-icons/fa";
 
 const Checkout = () => {
   const { user } = useContext(AuthContext);
@@ -31,7 +31,6 @@ const Checkout = () => {
       toast.warn("Please login to checkout");
       navigate("/login");
     } else if (cart.length === 0) {
-      // കാർട്ട് കാലിയാണെങ്കിൽ Checkout പേജിൽ നിൽക്കാൻ സമ്മതിക്കില്ല
       toast.warn("Your cart is empty!");
       navigate("/products");
     } else {
@@ -75,7 +74,7 @@ const Checkout = () => {
     }
   };
 
-  // 👇 RAZORPAY SCRIPT LOADER (Safety check)
+  // 👇 RAZORPAY SCRIPT LOADER
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -159,8 +158,8 @@ const Checkout = () => {
     const finalTotal = paymentMethod === "cod" ? totalPrice + 50 : totalPrice;
 
     try {
-      // Step 1: Create Order in Backend
-      const res = await api.post("/orders/", {
+      // ✅ FIX: URL changed to /orders/checkout/ (Matching Backend)
+      const res = await api.post("/orders/checkout/", {
         total_amount: finalTotal,
         shipping_details: selectedAddrObject, 
         payment_method: paymentMethod,
@@ -181,6 +180,7 @@ const Checkout = () => {
       }
 
     } catch (err) {
+      console.error(err);
       toast.error(err.response?.data?.error || "Order failed. Please check stock.");
     } finally {
       setLoading(false);

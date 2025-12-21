@@ -1,49 +1,54 @@
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import { createContext, useEffect, useState, useCallback, useMemo, useContext } from "react";
 import { AuthContext, useAxios } from "./AuthContext";
 import { toast } from "react-toastify";
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const { user } = useContext(AuthContext);
+  const { user, tokens } = useContext(AuthContext);
   const api = useAxios(); 
   const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // --- FETCH CART ---
   const loadCart = useCallback(async () => {
-    if (!user) {
+    // 🔥 FIX: User-ഉം Valid Token-ഉം ഉണ്ടെങ്കിൽ മാത്രം API വിളിക്കുക
+    if (!user || !tokens?.access) {
       setCart([]);
-      setLoading(false);
       return;
     }
 
     try {
+      setLoading(true);
       const res = await api.get("/cart/");
+      
       const formattedCart = res.data.map(item => ({
         ...item.product,       
-        cart_item_id: item.id, // This is crucial for deletion
+        cart_item_id: item.id,
         quantity: item.quantity
       }));
       setCart(formattedCart);
     } catch (err) {
       console.error("Failed to load cart", err);
-      if (err.response?.status === 401) setCart([]);
     } finally {
       setLoading(false);
     }
-  }, [user, api]);
+  }, [user, tokens, api]);
 
-  // Initial Load
+  // Initial Load Effect
   useEffect(() => {
-    loadCart();
-  }, [loadCart]);
+    if (user && tokens?.access) { // ✅ tokens.access ഉണ്ടെങ്കിൽ മാത്രം
+        loadCart();
+    } else {
+        setCart([]); // ലോഗൗട്ട് ആയാൽ കാർട്ട് ക്ലിയർ ചെയ്യും
+    }
+  }, [user, tokens, loadCart]);
 
-  // --- ADD TO CART (UPDATED ERROR HANDLING) ---
+  // --- ADD TO CART ---
   const addToCart = useCallback(async (product, event) => {
     if (event?.preventDefault) event.preventDefault();
 
-    if (!user) {
+    if (!user || !tokens?.access) {
       toast.warn("Please login to add items");
       return;
     }
@@ -51,7 +56,7 @@ export const CartProvider = ({ children }) => {
     const isItemInCart = cart.some((item) => item.id === product.id);
 
     try {
-      // 1. Optimistic Update (UI വേഗത്തിൽ മാറാൻ)
+      // Optimistic UI Update
       setCart((prev) => {
         const exists = prev.find((item) => item.id === product.id);
         if (exists) {
@@ -60,51 +65,42 @@ export const CartProvider = ({ children }) => {
         return [...prev, { ...product, quantity: 1 }];
       });
 
-      // 2. API Call
       await api.post("/cart/", {
         product_id: product.id,
         quantity: 1
       });
       
-      if (isItemInCart) {
-        toast.info("Item quantity updated");
-      } else {
-        toast.success("Added to cart");
-      }
-      
-      // 3. Refresh to sync with server
-      await loadCart(); 
+      if (isItemInCart) toast.info("Item quantity updated");
+      else toast.success("Added to cart");
 
     } catch (err) {
       console.error("Add to cart error:", err);
-      
-      // 👇 IMPORTANT: ബാക്കെൻഡിൽ നിന്നുള്ള എറർ മെസ്സേജ് കാണിക്കുന്നു
       const errorMsg = err.response?.data?.error || "Failed to add item";
       toast.error(errorMsg);
-
-      await loadCart(); // Revert to server state on error
+      await loadCart(); // Revert on error
     }
-  }, [user, api, cart, loadCart]);
+  }, [user, tokens, api, cart, loadCart]);
 
   // --- REMOVE FROM CART ---
   const removeFromCart = useCallback(async (productId, event) => {
     if (event?.preventDefault) event.preventDefault();
 
     const cartItem = cart.find(item => item.id === productId);
-    
+    const previousCart = [...cart];
+    setCart(prev => prev.filter(item => item.id !== productId));
+
     if (!cartItem?.cart_item_id) {
         await loadCart(); 
         return;
     }
 
     try {
-      setCart(prev => prev.filter(item => item.id !== productId));
       await api.delete(`/cart/${cartItem.cart_item_id}/`);
       toast.success("Removed from cart");
     } catch (err) {
       console.error(err);
       toast.error("Failed to remove");
-      loadCart();
+      setCart(previousCart);
     }
   }, [cart, api, loadCart]);
 
@@ -119,27 +115,21 @@ export const CartProvider = ({ children }) => {
       const deletePromises = previousCart.map(item => 
         item.cart_item_id ? api.delete(`/cart/${item.cart_item_id}/`) : Promise.resolve()
       );
-
       await Promise.all(deletePromises);
-      // toast.success("Cart cleared"); // Optional
-
     } catch (err) {
       console.error("Clear cart error:", err);
-      toast.error("Failed to clear cart fully");
       setCart(previousCart); 
     }
   }, [cart, api]);
 
-  // --- INCREMENT ---
+  // --- INCREMENT & DECREMENT ---
   const incrementQty = useCallback((productId, event) => {
     const product = cart.find(item => item.id === productId);
     if(product) addToCart(product, event); 
   }, [cart, addToCart]);
 
-  // --- DECREMENT ---
   const decrementQty = useCallback(async (productId, event) => {
     if (event?.preventDefault) event.preventDefault();
-
     const item = cart.find(i => i.id === productId);
     if (!item) return;
 
@@ -150,14 +140,10 @@ export const CartProvider = ({ children }) => {
 
     try {
       setCart(prev => prev.map(i => i.id === productId ? {...i, quantity: i.quantity - 1} : i));
-      
-      await api.post("/cart/", {
-        product_id: productId,
-        quantity: -1 
-      });
+      await api.post("/cart/", { product_id: productId, quantity: -1 });
     } catch (err) {
       console.error(err);
-      loadCart();
+      await loadCart();
     }
   }, [cart, api, removeFromCart, loadCart]);
 
@@ -166,15 +152,8 @@ export const CartProvider = ({ children }) => {
   }, [cart]);
 
   const contextValue = useMemo(() => ({
-    loading,
-    cart,
-    addToCart,
-    removeFromCart,
-    clearCart,
-    incrementQty,
-    decrementQty,
-    totalPrice,
-  }), [loading, cart, addToCart, removeFromCart, clearCart, incrementQty, decrementQty, totalPrice]);
+    loading, cart, addToCart, removeFromCart, clearCart, incrementQty, decrementQty, totalPrice, loadCart
+  }), [loading, cart, addToCart, removeFromCart, clearCart, incrementQty, decrementQty, totalPrice, loadCart]);
 
   return (
     <CartContext.Provider value={contextValue}>

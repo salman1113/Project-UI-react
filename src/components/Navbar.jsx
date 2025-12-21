@@ -41,7 +41,28 @@ const Navbar = () => {
   const cartContext = useContext(CartContext);
   const wishlistContext = useContext(WishlistContext);
 
-  // --- 🌟 ROBUST API FETCHING 🌟 ---
+  // --- 🌟 HELPER: Safe Image Extraction ---
+  const getProductImage = (product) => {
+    // 1. Check images array
+    if (product?.images && product.images.length > 0) {
+        const firstImg = product.images[0];
+        // If object (New Backend), return .url
+        if (typeof firstImg === 'object' && firstImg.url) {
+            return firstImg.url;
+        }
+        // If string (Legacy/External), return directly
+        if (typeof firstImg === 'string') {
+            return firstImg;
+        }
+    }
+    // 2. Legacy single image
+    if (product?.image) return product.image;
+
+    // 3. Fallback
+    return "https://via.placeholder.com/150?text=No+Image";
+  };
+
+  // --- ROBUST API FETCHING ---
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -98,11 +119,11 @@ const Navbar = () => {
   const cartCount = cart?.length || 0;
   const wishlistCount = wishlist?.length || 0;
 
-  // ✅ 1. Define Default Avatar URL
+  // 1. Define Default Avatar URL
   const displayName = user?.name || user?.username || "User";
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=f4d58d&color=001427&bold=true&length=1`;
 
-  // ✅ 2. Define Initial Image Source
+  // 2. Define Initial Image Source
   const userImage = user?.image ? user.image : defaultAvatar;
 
   // Click Outside Listener
@@ -214,7 +235,8 @@ const Navbar = () => {
                           >
                             <div className="h-24 w-full bg-white rounded-md mb-2 overflow-hidden flex items-center justify-center p-1 relative">
                               <img
-                                src={product.images && product.images.length > 0 ? product.images[0] : "https://via.placeholder.com/150?text=No+Image"}
+                                // 👇 Updated Image Logic
+                                src={getProductImage(product)}
                                 alt={product.name}
                                 className="h-full w-auto object-contain group-hover/card:scale-110 transition-transform duration-300"
                                 onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error"; }}
@@ -271,7 +293,6 @@ const Navbar = () => {
                 }}
                 className="flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#f4d58d] rounded-full p-0.5 border border-[#708d81]/50 transition-all hover:shadow-lg"
               >
-                {/* ✅ UPDATED: Add onError handler here */}
                 <img 
                     src={userImage} 
                     alt="Profile" 
@@ -286,7 +307,6 @@ const Navbar = () => {
               {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-72 bg-[#001427] border border-[#708d81]/20 rounded-2xl shadow-2xl z-50 overflow-hidden text-sm">
                   <div className="px-6 py-5 flex flex-col items-center border-b border-[#708d81]/20 bg-[#001c3d]/50">
-                    {/* ✅ UPDATED: Add onError handler here too */}
                     <img 
                         src={userImage} 
                         alt="User" 

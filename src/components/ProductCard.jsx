@@ -25,6 +25,27 @@ const ProductCard = ({ product }) => {
   // ✅ CHECK STOCK STATUS
   const isOutOfStock = product.count <= 0;
 
+  // ✅ SAFE IMAGE HELPER (ഇതാണ് മാറ്റിയത്)
+  const getDisplayImage = (prod) => {
+    // 1. Check if images array exists and has items
+    if (prod?.images && prod.images.length > 0) {
+        const firstImg = prod.images[0];
+        // If it's an object with a URL property (New Backend)
+        if (typeof firstImg === 'object' && firstImg.url) {
+            return firstImg.url;
+        }
+        // If it's just a string URL (Old/Alternative Backend)
+        if (typeof firstImg === 'string') {
+            return firstImg;
+        }
+    }
+    // 2. Fallback to legacy single image field
+    if (prod?.image) return prod.image;
+    
+    // 3. Default Placeholder
+    return "https://via.placeholder.com/300?text=No+Image";
+  };
+
   const handleAddToCart = (e) => {
     e.preventDefault(); 
     e.stopPropagation();
@@ -35,7 +56,6 @@ const ProductCard = ({ product }) => {
       return;
     }
     
-    // സ്റ്റോക്ക് ഇല്ലെങ്കിൽ ഒന്നും ചെയ്യില്ല
     if (isOutOfStock) return;
 
     addToCart(product);
@@ -86,9 +106,10 @@ const ProductCard = ({ product }) => {
       <div className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden">
         <Link to={`/products/${product.id}`}>
             <motion.img
-            src={product.images && product.images.length > 0 ? product.images[0] : "/placeholder-image.jpg"} 
+            // 👇 പഴയ കോഡ് മാറ്റി പുതിയ ഫംഗ്‌ഷൻ വിളിക്കുന്നു
+            src={getDisplayImage(product)} 
             alt={product.name}
-            className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale opacity-60' : ''}`} // Stock ഇല്ലെങ്കിൽ മങ്ങിയ കളർ
+            className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale opacity-60' : ''}`} 
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.3 }}
             loading="lazy" 
@@ -120,7 +141,7 @@ const ProductCard = ({ product }) => {
           whileHover={!isOutOfStock ? { scale: 1.02 } : {}}
           whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
           onClick={handleAddToCart}
-          disabled={isOutOfStock} // ✅ Button Disable ചെയ്യുന്നു
+          disabled={isOutOfStock} 
           className={`w-full px-3 py-2 rounded-md transition-all text-sm font-medium shadow-md ${
             isOutOfStock 
                 ? "bg-gray-600 text-gray-300 cursor-not-allowed" 

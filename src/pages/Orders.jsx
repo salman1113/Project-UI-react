@@ -185,10 +185,11 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
 
 // --- MAIN COMPONENT ---
 const Orders = () => {
-  const { user } = useContext(AuthContext);
+  // ✅ FIX: Extract 'tokens' from AuthContext
+  const { user, tokens } = useContext(AuthContext);
   const api = useAxios(); 
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Default false, wait for tokens
   
   const [nextPage, setNextPage] = useState(null);
   const [prevPage, setPrevPage] = useState(null);
@@ -223,27 +224,36 @@ const Orders = () => {
           price: item.price,
           quantity: item.quantity,
           image: item.product.images && item.product.images.length > 0 
-                 ? item.product.images[0] 
-                 : "/default-product.png"
+                  ? item.product.images[0] 
+                  : "/default-product.png"
         }))
       }));
 
       setOrders(transformedOrders);
     } catch (err) {
-      toast.error("Failed to fetch orders");
+      console.error("Order Fetch Error:", err);
+      // Don't show generic error on 401, handled globally
+      if(err.response?.status !== 401) {
+          toast.error("Failed to fetch orders");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ FIX: UseEffect waits for 'tokens' to be ready
   useEffect(() => {
     if (!user) {
       toast.warn("Please login to view your orders");
       navigate("/login");
       return;
     }
-    fetchOrders(currentUrl);
-  }, [user, navigate, api, currentUrl]); 
+    
+    // 🔥 Only fetch if tokens exist
+    if (tokens) {
+        fetchOrders(currentUrl);
+    }
+  }, [user, tokens, navigate, api, currentUrl]); 
 
   // --- HELPERS ---
   const loadRazorpay = () => {

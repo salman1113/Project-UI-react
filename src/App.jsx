@@ -1,19 +1,20 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+// ❌ Remove: import { BrowserRouter as Router ... }
+import { Routes, Route } from "react-router-dom"; // ✅ Keep only Routes, Route
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useContext } from "react";
 
 // Context Providers
-import { AuthContext, AuthProvider } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { WishlistProvider } from "./context/WishlistContext";
 
-// Layouts and Components
+// Layouts
 import UserLayout from "./layouts/UserLayout";
-import AdminLayout from "./layouts/AdminLayout";
-// 👇 Import both guards
+import AdminLayout from "./admin/components/AdminLayout";
+
+// Guards
 import { PrivateRoute, PublicRoute } from "./components/ProtectedRoute"; 
-import AdminProtectedRoute from "./admin/components/AdminProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // Pages
 import Home from "./pages/Home";
@@ -40,78 +41,53 @@ import AdminUsers from "./admin/pages/AdminUsers";
 
 const App = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <ToastContainer
-              position="bottom-left"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              theme="dark"
-            />
-            <AppContent />
-          </WishlistProvider>
-        </CartProvider>
-      </AuthProvider>
-    </Router>
-  );
-};
+    // ✅ NO <Router> here (Because it is in main.jsx)
+    <AuthProvider>
+      <CartProvider>
+        <WishlistProvider>
+          <ToastContainer position="bottom-left" autoClose={2000} theme="dark" />
+          
+          <Routes>
+            {/* 👑 ADMIN ROUTES */}
+            <Route path="/admin" element={<AdminProtectedRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
+            </Route>
 
-const AppContent = () => {
-  const { user } = useContext(AuthContext);
+            {/* 🛒 USER ROUTES */}
+            <Route element={<UserLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/products/:id" element={<ProductDetails />} />
 
-  // ADMIN ROUTING
-  if (user?.role === "admin") {
-    return (
-      <AdminLayout>
-        <Routes>
-          <Route element={<AdminProtectedRoute />}>
-            <Route path="/" element={<AdminDashboard />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/admin/products" element={<AdminProducts />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </AdminLayout>
-    );
-  }
+              <Route element={<PublicRoute />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
+              </Route>
 
-  // USER ROUTING
-  return (
-    <UserLayout>
-      <Routes>
-        {/* 🟢 OPEN ROUTES (Anyone can access) */}
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/products/:id" element={<ProductDetails />} />
-        
-        {/* 🟡 PUBLIC ROUTES (Only for Guests - No Logged In Users) */}
-        <Route element={<PublicRoute />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
-        </Route>
+              <Route element={<PrivateRoute />}>
+                <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/success" element={<Success />} />
+              </Route>
 
-        {/* 🔴 PRIVATE ROUTES (Login Required) */}
-        <Route element={<PrivateRoute />}>
-          <Route path="/wishlist" element={<Wishlist />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/success" element={<Success />} />
-        </Route>
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
 
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </UserLayout>
+        </WishlistProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 };
 
