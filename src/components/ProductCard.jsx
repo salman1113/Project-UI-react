@@ -9,45 +9,36 @@ import { motion } from "framer-motion";
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
-  
+
   const authContext = useContext(AuthContext);
   const cartContext = useContext(CartContext);
   const wishlistContext = useContext(WishlistContext);
-  
+
   if (!authContext || !cartContext || !wishlistContext) return null;
-  
+
   const { user, isLoading } = authContext;
   const { addToCart } = cartContext;
   const { addToWishlist, removeFromWishlist, wishlist } = wishlistContext;
 
   const isInWishlist = wishlist?.some((item) => item.id === product.id);
-  
-  // ✅ CHECK STOCK STATUS
   const isOutOfStock = product.count <= 0;
 
-  // ✅ SAFE IMAGE HELPER (ഇതാണ് മാറ്റിയത്)
   const getDisplayImage = (prod) => {
-    // 1. Check if images array exists and has items
     if (prod?.images && prod.images.length > 0) {
-        const firstImg = prod.images[0];
-        // If it's an object with a URL property (New Backend)
-        if (typeof firstImg === 'object' && firstImg.url) {
-            return firstImg.url;
-        }
-        // If it's just a string URL (Old/Alternative Backend)
-        if (typeof firstImg === 'string') {
-            return firstImg;
-        }
+      const firstImg = prod.images[0];
+      if (typeof firstImg === 'object' && firstImg.url) {
+        return firstImg.url;
+      }
+      if (typeof firstImg === 'string') {
+        return firstImg;
+      }
     }
-    // 2. Fallback to legacy single image field
     if (prod?.image) return prod.image;
-    
-    // 3. Default Placeholder
     return "https://via.placeholder.com/300?text=No+Image";
   };
 
   const handleAddToCart = (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     e.stopPropagation();
 
     if (!user && !isLoading) {
@@ -55,7 +46,7 @@ const ProductCard = ({ product }) => {
       navigate("/login");
       return;
     }
-    
+
     if (isOutOfStock) return;
 
     addToCart(product);
@@ -93,7 +84,7 @@ const ProductCard = ({ product }) => {
         whileTap={{ scale: 0.9 }}
         className="absolute top-3 right-3 cursor-pointer z-10 p-2 rounded-full bg-black/20 backdrop-blur-sm border border-white/10"
         onClick={handleWishlist}
-        type="button" 
+        type="button"
       >
         {isInWishlist ? (
           <AiFillHeart size={22} className="text-[#bf0603] drop-shadow-lg" />
@@ -105,24 +96,22 @@ const ProductCard = ({ product }) => {
       {/* Image Section */}
       <div className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden">
         <Link to={`/products/${product.id}`}>
-            <motion.img
-            // 👇 പഴയ കോഡ് മാറ്റി പുതിയ ഫംഗ്‌ഷൻ വിളിക്കുന്നു
-            src={getDisplayImage(product)} 
+          <motion.img
+            src={getDisplayImage(product)}
             alt={product.name}
-            className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale opacity-60' : ''}`} 
+            className={`w-full h-full object-cover ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.3 }}
-            loading="lazy" 
-            />
+            loading="lazy"
+          />
         </Link>
-        
-        {/* ✅ OUT OF STOCK BADGE */}
+
         {isOutOfStock && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <span className="bg-[#bf0603] text-white px-3 py-1 text-sm font-bold rounded shadow-lg">
-                    OUT OF STOCK
-                </span>
-            </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <span className="bg-[#bf0603] text-white px-3 py-1 text-sm font-bold rounded shadow-lg">
+              OUT OF STOCK
+            </span>
+          </div>
         )}
       </div>
 
@@ -141,13 +130,12 @@ const ProductCard = ({ product }) => {
           whileHover={!isOutOfStock ? { scale: 1.02 } : {}}
           whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
           onClick={handleAddToCart}
-          disabled={isOutOfStock} 
-          className={`w-full px-3 py-2 rounded-md transition-all text-sm font-medium shadow-md ${
-            isOutOfStock 
-                ? "bg-gray-600 text-gray-300 cursor-not-allowed" 
-                : "bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] hover:shadow-lg"
-          }`}
-          type="button" 
+          disabled={isOutOfStock}
+          className={`w-full px-3 py-2 rounded-md transition-all text-sm font-medium shadow-md ${isOutOfStock
+            ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+            : "bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] hover:shadow-lg"
+            }`}
+          type="button"
         >
           {isOutOfStock ? "Sold Out" : "Add to Cart"}
         </motion.button>

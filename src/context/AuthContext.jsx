@@ -10,7 +10,6 @@ const API_URL = "http://localhost:8000/api";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // ✅ FIX 1: Lazy Initialization
   const [user, setUser] = useState(() =>
     localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null
   );
@@ -79,14 +78,9 @@ export const AuthProvider = ({ children }) => {
     try {
       // 2. Call API
       const res = await axios.post(`${API_URL}/login/`, { username, password });
-
-      // 👇👇👇 ഇതാണ് നമ്മൾ ചേർത്ത പുതിയ വരി (DEBUGGING) 👇👇👇
-      console.log("🔴 LOGIN RESPONSE FROM BACKEND:", res.data);
-      // 👆👆👆 കൺസോളിൽ ഇത് നോക്കിയാൽ വിവരം കിട്ടും 👆👆👆
-
       const { access, refresh } = res.data;
 
-      // 3. Token Check: ടോക്കൺ ഇല്ലെങ്കിൽ അത് നിർത്തിവെക്കും
+      // 3. Token Check:
       if (!access) {
         toast.warn("Login Failed: No Token Received. Check Console.");
         return;
@@ -255,11 +249,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// ✅ FIXED useAxios HOOK
-// Tokens are read directly from LocalStorage to prevent 401 errors on refresh
-// ✅ FIXED useAxios (With Debugging)
-// AuthContext.jsx -ന്റെ ഏറ്റവും താഴെ
-
 export const useAxios = () => {
   const { logoutUser } = useContext(AuthContext);
 
@@ -274,7 +263,6 @@ export const useAxios = () => {
         const token = parsedTokens?.access || parsedTokens?.key;
 
         if (token) {
-          // ✅ JWT ആണെങ്കിൽ 'Bearer', അല്ലെങ്കിൽ 'Token' (Django Default)
           const isJWT = token.startsWith('eyJ');
           config.headers.Authorization = isJWT ? `Bearer ${token}` : `Token ${token}`;
         }
@@ -285,7 +273,6 @@ export const useAxios = () => {
     instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        // 401 Unauthorized വന്നാൽ ലൂപ്പ് ഒഴിവാക്കാൻ ലോഗൗട്ട് ചെയ്യുന്നു
         if (error.response && error.response.status === 401) {
           console.warn("Unauthorized Access! Redirecting to login...");
           logoutUser();

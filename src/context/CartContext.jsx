@@ -6,13 +6,12 @@ export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const { user, tokens } = useContext(AuthContext);
-  const api = useAxios(); 
+  const api = useAxios();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // --- FETCH CART ---
   const loadCart = useCallback(async () => {
-    // 🔥 FIX: User-ഉം Valid Token-ഉം ഉണ്ടെങ്കിൽ മാത്രം API വിളിക്കുക
     if (!user || !tokens?.access) {
       setCart([]);
       return;
@@ -21,9 +20,9 @@ export const CartProvider = ({ children }) => {
     try {
       setLoading(true);
       const res = await api.get("/cart/");
-      
+
       const formattedCart = res.data.map(item => ({
-        ...item.product,       
+        ...item.product,
         cart_item_id: item.id,
         quantity: item.quantity
       }));
@@ -37,10 +36,10 @@ export const CartProvider = ({ children }) => {
 
   // Initial Load Effect
   useEffect(() => {
-    if (user && tokens?.access) { // ✅ tokens.access ഉണ്ടെങ്കിൽ മാത്രം
-        loadCart();
+    if (user && tokens?.access) {
+      loadCart();
     } else {
-        setCart([]); // ലോഗൗട്ട് ആയാൽ കാർട്ട് ക്ലിയർ ചെയ്യും
+      setCart([]);
     }
   }, [user, tokens, loadCart]);
 
@@ -56,11 +55,10 @@ export const CartProvider = ({ children }) => {
     const isItemInCart = cart.some((item) => item.id === product.id);
 
     try {
-      // Optimistic UI Update
       setCart((prev) => {
         const exists = prev.find((item) => item.id === product.id);
         if (exists) {
-            return prev.map(item => item.id === product.id ? {...item, quantity: item.quantity + 1} : item);
+          return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
         }
         return [...prev, { ...product, quantity: 1 }];
       });
@@ -69,7 +67,7 @@ export const CartProvider = ({ children }) => {
         product_id: product.id,
         quantity: 1
       });
-      
+
       if (isItemInCart) toast.info("Item quantity updated");
       else toast.success("Added to cart");
 
@@ -77,7 +75,7 @@ export const CartProvider = ({ children }) => {
       console.error("Add to cart error:", err);
       const errorMsg = err.response?.data?.error || "Failed to add item";
       toast.error(errorMsg);
-      await loadCart(); // Revert on error
+      await loadCart();
     }
   }, [user, tokens, api, cart, loadCart]);
 
@@ -90,8 +88,8 @@ export const CartProvider = ({ children }) => {
     setCart(prev => prev.filter(item => item.id !== productId));
 
     if (!cartItem?.cart_item_id) {
-        await loadCart(); 
-        return;
+      await loadCart();
+      return;
     }
 
     try {
@@ -107,25 +105,25 @@ export const CartProvider = ({ children }) => {
   // --- CLEAR CART ---
   const clearCart = useCallback(async (event) => {
     if (event?.preventDefault) event.preventDefault();
-    
+
     const previousCart = [...cart];
-    setCart([]); 
+    setCart([]);
 
     try {
-      const deletePromises = previousCart.map(item => 
+      const deletePromises = previousCart.map(item =>
         item.cart_item_id ? api.delete(`/cart/${item.cart_item_id}/`) : Promise.resolve()
       );
       await Promise.all(deletePromises);
     } catch (err) {
       console.error("Clear cart error:", err);
-      setCart(previousCart); 
+      setCart(previousCart);
     }
   }, [cart, api]);
 
   // --- INCREMENT & DECREMENT ---
   const incrementQty = useCallback((productId, event) => {
     const product = cart.find(item => item.id === productId);
-    if(product) addToCart(product, event); 
+    if (product) addToCart(product, event);
   }, [cart, addToCart]);
 
   const decrementQty = useCallback(async (productId, event) => {
@@ -139,7 +137,7 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      setCart(prev => prev.map(i => i.id === productId ? {...i, quantity: i.quantity - 1} : i));
+      setCart(prev => prev.map(i => i.id === productId ? { ...i, quantity: i.quantity - 1 } : i));
       await api.post("/cart/", { product_id: productId, quantity: -1 });
     } catch (err) {
       console.error(err);

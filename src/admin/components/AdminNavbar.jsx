@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { FiSearch, FiBell, FiLogOut, FiUser, FiMenu } from "react-icons/fi";
 
-const AdminNavbar = ({ onMenuClick }) => { // 👈 onMenuClick prop ചേർത്തു
+const AdminNavbar = ({ onMenuClick }) => {
   const { user, logoutUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -26,12 +26,12 @@ const AdminNavbar = ({ onMenuClick }) => { // 👈 onMenuClick prop ചേർത
 
   return (
     <nav className="h-16 bg-[#001427]/90 backdrop-blur-md border-b border-[#708d81]/20 flex justify-between items-center px-6 sticky top-0 z-40">
-      
+
       {/* LEFT: Mobile Menu & Search */}
       <div className="flex items-center gap-4">
-        {/* 📱 Mobile Toggle Button */}
-        <button 
-          onClick={onMenuClick} // 👈 ക്ലിക്ക് ചെയ്യുമ്പോൾ സൈഡ്‌ബാർ വരും
+        {/* Mobile Toggle Button */}
+        <button
+          onClick={onMenuClick}
           className="md:hidden text-[#f4d58d] text-2xl hover:bg-[#001c3d] p-1 rounded"
         >
           <FiMenu />
@@ -39,9 +39,9 @@ const AdminNavbar = ({ onMenuClick }) => { // 👈 onMenuClick prop ചേർത
 
         <div className="hidden md:flex items-center bg-[#001c3d] rounded-lg px-4 py-2 border border-[#708d81]/20 w-64 focus-within:border-[#f4d58d] transition-all duration-300">
           <FiSearch className="text-[#708d81]" />
-          <input 
-            type="text" 
-            placeholder="Search anything..." 
+          <input
+            type="text"
+            placeholder="Search anything..."
             className="bg-transparent border-none outline-none text-[#f2e8cf] text-sm ml-3 w-full placeholder-gray-500"
           />
         </div>
@@ -62,7 +62,7 @@ const AdminNavbar = ({ onMenuClick }) => { // 👈 onMenuClick prop ചേർത
             </div>
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#bf0603] to-[#f4d58d] p-[2px]">
               <div className="w-full h-full rounded-full bg-[#001427] flex items-center justify-center overflow-hidden">
-                 {user?.image ? <img src={user.image} alt="Admin" className="w-full h-full object-cover" /> : <span className="text-[#f4d58d] font-bold">A</span>}
+                {user?.image ? <img src={user.image} alt="Admin" className="w-full h-full object-cover" /> : <span className="text-[#f4d58d] font-bold">A</span>}
               </div>
             </div>
           </button>

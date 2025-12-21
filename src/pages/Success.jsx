@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, Navigate } from "react-router-dom"; // ✅ Navigate Import ചെയ്തു
+import { Link, useLocation, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
 import { FiShoppingBag, FiPackage, FiCheck } from "react-icons/fi";
@@ -7,15 +7,9 @@ import { FiShoppingBag, FiPackage, FiCheck } from "react-icons/fi";
 const Success = () => {
   const location = useLocation();
   const [windowDimension, setWindowDimension] = useState({ width: window.innerWidth, height: window.innerHeight });
-
-  // 🔒 SECURITY CHECK (ഏറ്റവും മുകളിൽ കൊടുക്കുക)
-  // 'state' ഇല്ലെങ്കിൽ, അല്ലെങ്കിൽ 'fromCheckout' ഇല്ലെങ്കിൽ ഹോം പേജിലേക്ക് വിടുക.
   if (!location.state || !location.state.fromCheckout) {
-      return <Navigate to="/" replace />;
+    return <Navigate to="/" replace />;
   }
-
-  // --- ഇതിന് താഴെ ഉള്ളത് ടിക്കറ്റ് ഉള്ളവർക്ക് മാത്രം കാണും ---
-
   const orderId = location.state?.orderId || "EB-ORDER";
 
   useEffect(() => {
@@ -26,16 +20,16 @@ const Success = () => {
 
   return (
     <div className="relative min-h-screen bg-[#001427] flex items-center justify-center px-4 overflow-hidden">
-      
+
       <Confetti width={windowDimension.width} height={windowDimension.height} numberOfPieces={200} recycle={false} gravity={0.2} />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
         className="bg-[#001c3d] border border-[#708d81]/20 p-8 md:p-12 rounded-3xl shadow-2xl max-w-lg w-full text-center relative z-10"
       >
-        
+
         {/* ANIMATED CHECKMARK */}
         <div className="flex justify-center mb-6">
           <motion.div
@@ -50,9 +44,9 @@ const Success = () => {
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                d="M5 13l4 4L19 7" 
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
               />
             </svg>
           </motion.div>
@@ -94,14 +88,14 @@ const Success = () => {
 
         {/* ACTION BUTTONS */}
         <div className="flex flex-col gap-3">
-          <Link 
+          <Link
             to="/orders"
             className="w-full py-3.5 rounded-xl bg-[#bf0603] text-[#f2e8cf] font-bold hover:bg-[#8d0801] transition-all shadow-lg hover:shadow-red-900/30 flex items-center justify-center gap-2"
           >
             <FiPackage /> View My Order
           </Link>
-          
-          <Link 
+
+          <Link
             to="/products"
             className="w-full py-3.5 rounded-xl border border-[#708d81] text-[#708d81] font-medium hover:text-[#f4d58d] hover:border-[#f4d58d] hover:bg-[#001427] transition-all"
           >

@@ -1,5 +1,4 @@
-// ❌ Remove: import { BrowserRouter as Router ... }
-import { Routes, Route } from "react-router-dom"; // ✅ Keep only Routes, Route
+import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -13,7 +12,7 @@ import UserLayout from "./layouts/UserLayout";
 import AdminLayout from "./admin/components/AdminLayout";
 
 // Guards
-import { PrivateRoute, PublicRoute } from "./components/ProtectedRoute"; 
+import { PrivateRoute, PublicRoute } from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 // Pages
@@ -29,7 +28,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
-import Settings from "./pages/Settings"; 
+import Settings from "./pages/Settings";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 
@@ -41,14 +40,14 @@ import AdminUsers from "./admin/pages/AdminUsers";
 
 const App = () => {
   return (
-    // ✅ NO <Router> here (Because it is in main.jsx)
+
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
           <ToastContainer position="bottom-left" autoClose={2000} theme="dark" />
-          
+
           <Routes>
-            {/* 👑 ADMIN ROUTES */}
+            {/* ADMIN ROUTES */}
             <Route path="/admin" element={<AdminProtectedRoute />}>
               <Route element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
@@ -58,7 +57,7 @@ const App = () => {
               </Route>
             </Route>
 
-            {/* 🛒 USER ROUTES */}
+            {/*  USER ROUTES */}
             <Route element={<UserLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />

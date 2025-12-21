@@ -6,12 +6,11 @@ export const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
   const { user, tokens } = useContext(AuthContext);
-  const api = useAxios(); 
+  const api = useAxios();
   const [wishlist, setWishlist] = useState([]);
 
   // --- FETCH WISHLIST ---
   const fetchWishlist = useCallback(async () => {
-    // 🔥 FIX: Check both user and valid token access
     if (!user || !tokens?.access) {
       setWishlist([]);
       return;
@@ -20,8 +19,8 @@ export const WishlistProvider = ({ children }) => {
     try {
       const res = await api.get("/wishlist/");
       const formattedWishlist = res.data.map(item => ({
-          ...item.product,
-          wishlist_item_id: item.id 
+        ...item.product,
+        wishlist_item_id: item.id
       }));
       setWishlist(formattedWishlist);
     } catch (err) {
@@ -31,10 +30,10 @@ export const WishlistProvider = ({ children }) => {
 
   // Initial Load Effect
   useEffect(() => {
-    if (user && tokens?.access) { // ✅ tokens.access ഉണ്ടെങ്കിൽ മാത്രം
-        fetchWishlist();
+    if (user && tokens?.access) {
+      fetchWishlist();
     } else {
-        setWishlist([]);
+      setWishlist([]);
     }
   }, [user, tokens, fetchWishlist]);
 
@@ -43,17 +42,17 @@ export const WishlistProvider = ({ children }) => {
     if (event?.preventDefault) event.preventDefault();
 
     if (!user || !tokens?.access) {
-        toast.warn("Please login first");
-        return;
+      toast.warn("Please login first");
+      return;
     }
 
     if (wishlist.some(item => item.id === product.id)) {
-        toast.info("Already in wishlist");
-        return;
+      toast.info("Already in wishlist");
+      return;
     }
 
     try {
-      setWishlist(prev => [...prev, product]); 
+      setWishlist(prev => [...prev, product]);
       await api.post("/wishlist/", { product_id: product.id });
       toast.success("Added to wishlist");
     } catch (err) {
@@ -69,11 +68,11 @@ export const WishlistProvider = ({ children }) => {
     if (event?.preventDefault) event.preventDefault();
     const itemToRemove = wishlist.find(item => item.id === productId);
     const previousList = [...wishlist];
-    setWishlist(prev => prev.filter(item => item.id !== productId)); 
+    setWishlist(prev => prev.filter(item => item.id !== productId));
 
     if (!itemToRemove?.wishlist_item_id) {
-        await fetchWishlist(); 
-        return;
+      await fetchWishlist();
+      return;
     }
 
     try {
@@ -90,17 +89,17 @@ export const WishlistProvider = ({ children }) => {
   const clearWishlist = async (event) => {
     if (event?.preventDefault) event.preventDefault();
     const previousList = [...wishlist];
-    setWishlist([]); 
+    setWishlist([]);
 
     try {
-        const deletePromises = previousList.map(item => 
-            item.wishlist_item_id ? api.delete(`/wishlist/${item.wishlist_item_id}/`) : Promise.resolve()
-        );
-        await Promise.all(deletePromises);
-        toast.success("Wishlist cleared");
+      const deletePromises = previousList.map(item =>
+        item.wishlist_item_id ? api.delete(`/wishlist/${item.wishlist_item_id}/`) : Promise.resolve()
+      );
+      await Promise.all(deletePromises);
+      toast.success("Wishlist cleared");
     } catch (err) {
-        console.error("Failed to clear wishlist", err);
-        setWishlist(previousList); 
+      console.error("Failed to clear wishlist", err);
+      setWishlist(previousList);
     }
   };
 

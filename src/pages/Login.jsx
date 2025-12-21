@@ -36,19 +36,19 @@ const Login = () => {
     setLoading(true);
     try {
       // 1. Call API and WAIT for userData response
-      const userData = await loginUserWithAPI(form, null, toast); 
-      
+      const userData = await loginUserWithAPI(form, null, toast);
+
       // 2. Check Role & Redirect
       if (userData) {
-          if (userData.is_superuser || userData.role === 'admin') {
-              console.log("Redirecting to Admin...");
-              navigate("/admin"); // 👑 Go to Admin Dashboard
-          } else {
-              console.log("Redirecting to Home...");
-              navigate("/"); // 🛒 Go to User Home
-          }
+        if (userData.is_superuser || userData.role === 'admin') {
+          console.log("Redirecting to Admin...");
+          navigate("/admin"); // 👑 Go to Admin Dashboard
+        } else {
+          console.log("Redirecting to Home...");
+          navigate("/"); // 🛒 Go to User Home
+        }
       }
-      
+
     } catch (error) {
       console.error("Login failed", error);
     } finally {
@@ -106,7 +106,7 @@ const Login = () => {
             transition={{ delay: 0.6, duration: 0.5 }}
           >
             <div className="relative">
-                <input
+              <input
                 type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
@@ -114,25 +114,25 @@ const Login = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white pr-10"
                 required
-                />
-                <button
+              />
+              <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-[#f4d58d]"
-                >
+              >
                 {showPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
+              </button>
             </div>
-            
+
             {/* Forgot Password Link */}
             <div className="flex justify-end mt-2">
-                <Link 
-                    to="/forgot-password" 
-                    className="text-sm font-medium hover:underline transition-colors"
-                    style={{ color: "#f4d58d" }}
-                >
-                    Forgot Password?
-                </Link>
+              <Link
+                to="/forgot-password"
+                className="text-sm font-medium hover:underline transition-colors"
+                style={{ color: "#f4d58d" }}
+              >
+                Forgot Password?
+              </Link>
             </div>
           </motion.div>
 

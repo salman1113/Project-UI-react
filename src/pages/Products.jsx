@@ -8,7 +8,7 @@ import { useSearchParams } from "react-router-dom"; // Import useSearchParams
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams(); // Hook for URL Params
-  
+
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,13 +67,13 @@ const Products = () => {
   // --- UPDATE URL HELPER ---
   const updateParams = (key, value) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-    
+
     if (value && value !== "All") {
       current.set(key, value);
     } else {
       current.delete(key);
     }
-    
+
     // Reset to page 1 when filter changes (except when changing page itself)
     if (key !== "page") {
       current.set("page", "1");
@@ -186,10 +186,10 @@ const Products = () => {
 
       {loading && (
         <div className="flex justify-center py-20">
-             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#bf0603]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#bf0603]"></div>
         </div>
       )}
-      
+
       {error && !loading && (
         <div className="text-center py-20">
           <FiAlertCircle className="h-8 w-8 text-[#bf0603] mx-auto mb-4" />
@@ -199,7 +199,7 @@ const Products = () => {
       )}
 
       {!loading && !error && products.length === 0 && (
-         <div className="text-center py-20 text-[#708d81]">No products found matching your criteria.</div>
+        <div className="text-center py-20 text-[#708d81]">No products found matching your criteria.</div>
       )}
 
       {!loading && !error && products.length > 0 && (

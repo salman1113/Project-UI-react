@@ -9,14 +9,14 @@ import { FaCreditCard, FaMoneyBillWave, FaMapMarkerAlt, FaPlus } from "react-ico
 const Checkout = () => {
   const { user } = useContext(AuthContext);
   const { cart, clearCart, totalPrice } = useContext(CartContext);
-  const api = useAxios(); 
+  const api = useAxios();
   const navigate = useNavigate();
 
   // State Management
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("online"); 
+  const [paymentMethod, setPaymentMethod] = useState("online");
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -25,7 +25,7 @@ const Checkout = () => {
     name: "", phone: "", street: "", city: "", state: "", zip_code: "", is_default: false
   });
 
-  // ✅ 1. PROTECTION: CHECK USER & EMPTY CART
+  // 1. PROTECTION: CHECK USER & EMPTY CART
   useEffect(() => {
     if (!user) {
       toast.warn("Please login to checkout");
@@ -42,7 +42,7 @@ const Checkout = () => {
     try {
       const res = await api.get("/addresses/");
       setAddresses(res.data);
-      
+
       if (res.data.length > 0) {
         const defaultAddr = res.data.find(addr => addr.is_default);
         setSelectedAddressId(defaultAddr ? defaultAddr.id : res.data[0].id);
@@ -66,15 +66,15 @@ const Checkout = () => {
     try {
       const res = await api.post("/addresses/", newAddress);
       setAddresses([...addresses, res.data]);
-      setSelectedAddressId(res.data.id); 
-      setIsAddingNew(false); 
+      setSelectedAddressId(res.data.id);
+      setIsAddingNew(false);
       toast.success("Address added successfully!");
     } catch (err) {
       toast.error("Failed to save address");
     }
   };
 
-  // 👇 RAZORPAY SCRIPT LOADER
+  // RAZORPAY SCRIPT LOADER
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -89,40 +89,40 @@ const Checkout = () => {
   const handleOnlinePayment = async (orderId, amount) => {
     const isLoaded = await loadRazorpay();
     if (!isLoaded) {
-        toast.error("Razorpay SDK failed to load");
-        return;
+      toast.error("Razorpay SDK failed to load");
+      return;
     }
 
     try {
       const { data } = await api.post("/payment/create/", { total_amount: amount });
 
       const options = {
-        key: data.key_id, 
+        key: data.key_id,
         amount: data.amount,
         currency: data.currency,
         name: "EchoBay",
         description: "Order Payment",
-        order_id: data.razorpay_order_id, 
+        order_id: data.razorpay_order_id,
         handler: async function (response) {
           try {
             await api.post("/payment/verify/", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
-              order_id: orderId 
+              order_id: orderId
             });
-            
+
             toast.success("Payment Successful! Order Placed.");
             clearCart();
-            
-            // ✅ PASS STATE TO SUCCESS PAGE
-            navigate("/success", { 
-                state: { fromCheckout: true, orderId: orderId } 
+
+            // PASS STATE TO SUCCESS PAGE
+            navigate("/success", {
+              state: { fromCheckout: true, orderId: orderId }
             });
 
           } catch (err) {
             toast.error("Payment Verification Failed");
-            navigate("/orders"); 
+            navigate("/orders");
           }
         },
         prefill: {
@@ -151,31 +151,28 @@ const Checkout = () => {
       toast.warn("Please select a shipping address");
       return;
     }
-    
+
     setLoading(true);
-    
+
     const selectedAddrObject = addresses.find(a => a.id === selectedAddressId);
     const finalTotal = paymentMethod === "cod" ? totalPrice + 50 : totalPrice;
 
     try {
-      // ✅ FIX: URL changed to /orders/checkout/ (Matching Backend)
       const res = await api.post("/orders/checkout/", {
         total_amount: finalTotal,
-        shipping_details: selectedAddrObject, 
+        shipping_details: selectedAddrObject,
         payment_method: paymentMethod,
       });
 
-      // Step 2: Handle Payment Flow
       if (paymentMethod === "online") {
         await handleOnlinePayment(res.data.order_id, finalTotal);
       } else {
         // If COD -> Direct Success
         toast.success("Order placed successfully!");
         clearCart();
-        
-        // ✅ PASS STATE TO SUCCESS PAGE
-        navigate("/success", { 
-            state: { fromCheckout: true, orderId: res.data.order_id } 
+
+        navigate("/success", {
+          state: { fromCheckout: true, orderId: res.data.order_id }
         });
       }
 
@@ -195,7 +192,7 @@ const Checkout = () => {
     }
     if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
-  
+
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
 
   if (!user) return null;
@@ -203,7 +200,7 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] text-[#f2e8cf] py-10 px-4">
       <div className="max-w-4xl mx-auto">
-        <motion.h2 
+        <motion.h2
           initial={{ y: -20 }} animate={{ y: 0 }}
           className="text-3xl font-bold text-[#f4d58d] mb-6 text-center"
         >
@@ -227,7 +224,7 @@ const Checkout = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold text-[#f4d58d]">Select Shipping Address</h3>
-              <button 
+              <button
                 onClick={() => setIsAddingNew(!isAddingNew)}
                 className="flex items-center gap-2 text-[#f4d58d] border border-[#f4d58d] px-3 py-1 rounded hover:bg-[#f4d58d] hover:text-black transition"
               >
@@ -239,17 +236,16 @@ const Checkout = () => {
             {!isAddingNew && (
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 {addresses.map((addr) => (
-                  <div 
+                  <div
                     key={addr.id}
                     onClick={() => setSelectedAddressId(addr.id)}
-                    className={`relative p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedAddressId === addr.id 
-                      ? "border-[#f4d58d] bg-[#f4d58d]/10 shadow-[0_0_10px_rgba(244,213,141,0.2)]" 
+                    className={`relative p-4 border rounded-lg cursor-pointer transition-all ${selectedAddressId === addr.id
+                      ? "border-[#f4d58d] bg-[#f4d58d]/10 shadow-[0_0_10px_rgba(244,213,141,0.2)]"
                       : "border-[#708d81]/30 hover:border-[#708d81]"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <FaMapMarkerAlt className="text-[#f4d58d]"/>
+                      <FaMapMarkerAlt className="text-[#f4d58d]" />
                       <span className="font-bold text-lg">{addr.name}</span>
                     </div>
                     <p className="text-sm text-[#f2e8cf]/80">{addr.street}, {addr.city}</p>
@@ -257,7 +253,7 @@ const Checkout = () => {
                     <p className="text-sm text-[#708d81] mt-2 font-mono">📞 {addr.phone}</p>
                   </div>
                 ))}
-                
+
                 {addresses.length === 0 && (
                   <div className="col-span-2 text-center py-10 border border-dashed border-[#708d81] rounded-lg">
                     <p className="text-[#708d81] mb-2">No saved addresses found.</p>
@@ -292,26 +288,24 @@ const Checkout = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h3 className="text-xl font-semibold text-[#f4d58d] mb-6">Choose Payment Method</h3>
             <div className="flex flex-col md:flex-row gap-4">
-              <button 
+              <button
                 onClick={() => setPaymentMethod("online")}
-                className={`flex-1 p-8 border rounded-lg flex flex-col items-center gap-3 transition-all ${
-                  paymentMethod === "online" 
-                  ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d] shadow-[0_0_15px_rgba(244,213,141,0.2)]" 
+                className={`flex-1 p-8 border rounded-lg flex flex-col items-center gap-3 transition-all ${paymentMethod === "online"
+                  ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d] shadow-[0_0_15px_rgba(244,213,141,0.2)]"
                   : "border-[#708d81]/30 text-[#708d81] hover:bg-[#708d81]/10"
-                }`}
+                  }`}
               >
                 <FaCreditCard size={32} />
                 <span className="font-bold text-lg">Pay Online</span>
                 <span className="text-xs text-[#708d81]">(Razorpay Secure)</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setPaymentMethod("cod")}
-                className={`flex-1 p-8 border rounded-lg flex flex-col items-center gap-3 transition-all ${
-                  paymentMethod === "cod" 
-                  ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d] shadow-[0_0_15px_rgba(244,213,141,0.2)]" 
+                className={`flex-1 p-8 border rounded-lg flex flex-col items-center gap-3 transition-all ${paymentMethod === "cod"
+                  ? "border-[#f4d58d] bg-[#f4d58d]/10 text-[#f4d58d] shadow-[0_0_15px_rgba(244,213,141,0.2)]"
                   : "border-[#708d81]/30 text-[#708d81] hover:bg-[#708d81]/10"
-                }`}
+                  }`}
               >
                 <FaMoneyBillWave size={32} />
                 <span className="font-bold text-lg">Cash on Delivery</span>
@@ -326,7 +320,7 @@ const Checkout = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">Order Summary</h3>
             <div className="bg-[#0f1b32] p-6 rounded-lg border border-[#708d81]/30">
-              
+
               {/* Product List */}
               <div className="space-y-3 mb-4">
                 {cart.map(item => (
@@ -343,7 +337,7 @@ const Checkout = () => {
               {/* Delivery Address Preview */}
               <div className="mb-4 p-3 bg-[#001427] rounded text-sm text-[#708d81]">
                 <p className="font-bold text-[#f2e8cf] mb-1">Delivering to:</p>
-                {addresses.find(a => a.id === selectedAddressId)?.name}, <br/>
+                {addresses.find(a => a.id === selectedAddressId)?.name}, <br />
                 {addresses.find(a => a.id === selectedAddressId)?.street}, {addresses.find(a => a.id === selectedAddressId)?.city}
               </div>
 
@@ -368,7 +362,7 @@ const Checkout = () => {
 
         {/* --- NAVIGATION BUTTONS --- */}
         <div className="flex justify-between mt-8 pt-6 border-t border-[#708d81]/20">
-          <button 
+          <button
             disabled={currentStep === 1}
             onClick={prevStep}
             className={`px-6 py-3 rounded-lg border border-[#708d81] font-medium transition ${currentStep === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[#708d81]/20 text-[#f4d58d]'}`}
@@ -377,15 +371,15 @@ const Checkout = () => {
           </button>
 
           {currentStep < 3 ? (
-            <button 
+            <button
               onClick={nextStep}
-              disabled={isAddingNew} 
+              disabled={isAddingNew}
               className="bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:shadow-red-900/50 transition transform hover:scale-105"
             >
               Continue
             </button>
           ) : (
-            <button 
+            <button
               onClick={handleSubmit}
               disabled={loading}
               className="bg-[#f4d58d] text-black px-10 py-3 rounded-lg font-bold hover:bg-[#e0c070] shadow-[0_0_20px_rgba(244,213,141,0.3)] transition transform hover:scale-105 flex items-center gap-2"

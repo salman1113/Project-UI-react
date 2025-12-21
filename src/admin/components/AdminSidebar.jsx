@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { FiBox, FiUsers, FiShoppingBag, FiPieChart, FiX } from "react-icons/fi";
 
-const AdminSidebar = ({ closeMobileMenu }) => { // 👈 closeMobileMenu prop ചേർത്തു
+const AdminSidebar = ({ closeMobileMenu }) => {
   const location = useLocation();
 
   const menuItems = [
@@ -18,30 +18,29 @@ const AdminSidebar = ({ closeMobileMenu }) => { // 👈 closeMobileMenu prop ച
         <h1 className="text-xl font-bold text-[#f4d58d] tracking-wider">
           ECHO<span className="text-[#bf0603]">BAY</span>
         </h1>
-        {/* 📱 Mobile Close Button */}
+        {/*Mobile Close Button */}
         <button onClick={closeMobileMenu} className="md:hidden text-[#708d81]">
-            <FiX size={24} />
+          <FiX size={24} />
         </button>
       </div>
 
       {/* NAVIGATION LINKS */}
       <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
-          const isActive = 
-            item.path === "/admin" 
-              ? location.pathname === "/admin" 
+          const isActive =
+            item.path === "/admin"
+              ? location.pathname === "/admin"
               : location.pathname.startsWith(item.path);
 
           return (
             <Link
               key={item.path}
               to={item.path}
-              onClick={closeMobileMenu} // 👈 ക്ലിക്ക് ചെയ്താൽ മൊബൈലിൽ മെനു താനേ അടയും
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
-                isActive
-                  ? "bg-[#bf0603] text-white shadow-lg"
-                  : "text-[#708d81] hover:bg-[#001c3d] hover:text-[#f4d58d]"
-              }`}
+              onClick={closeMobileMenu}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${isActive
+                ? "bg-[#bf0603] text-white shadow-lg"
+                : "text-[#708d81] hover:bg-[#001c3d] hover:text-[#f4d58d]"
+                }`}
             >
               <span className="text-xl">{item.icon}</span>
               <span>{item.name}</span>

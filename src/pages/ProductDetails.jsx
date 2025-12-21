@@ -11,8 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 const ProductDetails = () => {
   const { id } = useParams();
   const { user } = useContext(AuthContext);
-  
-  const { addToCart, cart } = useContext(CartContext); 
+
+  const { addToCart, cart } = useContext(CartContext);
   const { addToWishlist, removeFromWishlist, wishlist } = useContext(WishlistContext);
 
   const [product, setProduct] = useState(null);
@@ -43,18 +43,18 @@ const ProductDetails = () => {
 
     // 1. Check New Gallery Array (List of Objects {id, url})
     if (product.images && product.images.length > 0) {
-        images = product.images.map(img => {
-            // If it's an object, take .url, otherwise take the string itself
-            return (typeof img === 'object' && img.url) ? img.url : img;
-        });
-    } 
+      images = product.images.map(img => {
+        // If it's an object, take .url, otherwise take the string itself
+        return (typeof img === 'object' && img.url) ? img.url : img;
+      });
+    }
     // 2. Fallback to Legacy Single Image
     else if (product.image) {
-        images = [product.image];
-    } 
+      images = [product.image];
+    }
     // 3. Fallback Placeholder
     else {
-        images = ["https://via.placeholder.com/500?text=No+Image"];
+      images = ["https://via.placeholder.com/500?text=No+Image"];
     }
 
     return images;
@@ -67,12 +67,12 @@ const ProductDetails = () => {
       toast.warn("Please login to add items to cart");
       return;
     }
-    
+
     if (isOutOfStock) {
-        toast.error("Sorry, this item is out of stock");
-        return;
+      toast.error("Sorry, this item is out of stock");
+      return;
     }
-    
+
     addToCart(product);
   };
 
@@ -105,9 +105,9 @@ const ProductDetails = () => {
       className="mx-auto px-4 sm:px-6 py-8 sm:py-12 bg-gradient-to-br from-[#0a192f] via-[#0f1b32] to-[#020617] min-h-screen"
     >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-start">
-        
+
         {/* --- IMAGE GALLERY --- */}
-        <motion.div 
+        <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
@@ -115,7 +115,7 @@ const ProductDetails = () => {
         >
           {/* Thumbnails (Left side on Desktop, Bottom on Mobile) */}
           {gallery.length > 1 && (
-            <motion.div 
+            <motion.div
               className="flex sm:flex-col gap-2 sm:gap-3 w-full sm:w-20 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0"
             >
               {gallery.map((imgUrl, index) => (
@@ -125,11 +125,10 @@ const ProductDetails = () => {
                   animate={{ scale: 1, opacity: 1 }}
                   whileHover={{ scale: 1.05 }}
                   onClick={() => setSelectedImageIndex(index)}
-                  className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/5 ${
-                    selectedImageIndex === index
-                      ? "border-[#bf0603]"
-                      : "border-transparent hover:border-[#708d81]/40"
-                  }`}
+                  className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/5 ${selectedImageIndex === index
+                    ? "border-[#bf0603]"
+                    : "border-transparent hover:border-[#708d81]/40"
+                    }`}
                 >
                   <img
                     src={imgUrl}
@@ -158,13 +157,13 @@ const ProductDetails = () => {
                   className={`max-w-full max-h-full object-contain p-4 ${isOutOfStock ? 'grayscale opacity-70' : ''}`}
                 />
               </AnimatePresence>
-              
+
               {/* OUT OF STOCK BADGE */}
               {isOutOfStock && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <span className="bg-[#bf0603] text-white px-4 py-2 text-lg font-bold rounded shadow-lg transform -rotate-12 border border-white/20">
-                        OUT OF STOCK
-                    </span>
+                  <span className="bg-[#bf0603] text-white px-4 py-2 text-lg font-bold rounded shadow-lg transform -rotate-12 border border-white/20">
+                    OUT OF STOCK
+                  </span>
                 </div>
               )}
 
@@ -216,11 +215,10 @@ const ProductDetails = () => {
             whileTap={!isOutOfStock ? { scale: 0.98 } : {}}
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className={`w-full px-6 py-3 sm:py-4 rounded-lg font-medium shadow-lg transition-all text-sm sm:text-base ${
-                isOutOfStock 
-                ? "bg-gray-700 text-gray-400 cursor-not-allowed border border-gray-600" 
-                : "bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] hover:shadow-xl"
-            }`}
+            className={`w-full px-6 py-3 sm:py-4 rounded-lg font-medium shadow-lg transition-all text-sm sm:text-base ${isOutOfStock
+              ? "bg-gray-700 text-gray-400 cursor-not-allowed border border-gray-600"
+              : "bg-gradient-to-r from-[#8d0801] to-[#bf0603] text-[#f2e8cf] hover:shadow-xl"
+              }`}
           >
             {isOutOfStock ? "Out of Stock" : "Add to Cart"}
           </motion.button>
@@ -228,11 +226,11 @@ const ProductDetails = () => {
           <div className="pt-4 sm:pt-6 border-t border-[#708d81]/20">
             <div className="space-y-2 sm:space-y-3">
               <p className="text-[#708d81] text-sm sm:text-base">
-                <span className="text-[#f4d58d] font-medium">Availability: </span> 
+                <span className="text-[#f4d58d] font-medium">Availability: </span>
                 {isOutOfStock ? (
-                    <span className="text-red-500 font-bold">Out of Stock</span>
+                  <span className="text-red-500 font-bold">Out of Stock</span>
                 ) : (
-                    <span className="text-green-400">In Stock</span>
+                  <span className="text-green-400">In Stock</span>
                 )}
               </p>
             </div>

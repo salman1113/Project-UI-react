@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi"; // Icons imported
+import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 
 const Signup = () => {
   const { signupUser } = useContext(AuthContext);
@@ -15,7 +15,6 @@ const Signup = () => {
     password: "",
   });
 
-  // New States for UI UX
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -25,18 +24,18 @@ const Signup = () => {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setLoading(true); // Start Loading
+    setLoading(true);
     try {
       await signupUser(form, navigate, toast);
     } catch (error) {
       console.error("Signup failed", error);
     } finally {
-      setLoading(false); // Stop Loading
+      setLoading(false);
     }
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4"
       style={{
         backgroundImage: "url('https://www.apple.com/v/airpods-max/i/images/overview/product-stories/anc/anc_airpod_max_lifestyle__duzobvqwpz42_large_2x.jpg')",
@@ -44,14 +43,14 @@ const Signup = () => {
         backgroundAttachment: "fixed",
       }}
     >
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="w-full max-w-md p-8 rounded-2xl backdrop-blur-lg bg-white/10 border border-white/20 shadow-xl"
         style={{ boxShadow: "0 8px 32px 0 rgba(191, 6, 3, 0.2)" }}
       >
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.8 }}
@@ -60,7 +59,7 @@ const Signup = () => {
         >
           Join Us
         </motion.h2>
-        
+
         <form onSubmit={handleSignup} className="space-y-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -70,7 +69,7 @@ const Signup = () => {
             <input
               type="text"
               name="name"
-              placeholder="Username" 
+              placeholder="Username"
               value={form.name}
               onChange={handleChange}
               className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#f4d58d] placeholder-white/70 text-white"
@@ -93,15 +92,15 @@ const Signup = () => {
               required
             />
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="relative" // Relative for positioning icon
+            className="relative"
           >
             <input
-              type={showPassword ? "text" : "password"} // Toggle type
+              type={showPassword ? "text" : "password"}
               name="password"
               placeholder="Password"
               value={form.password}
@@ -117,12 +116,12 @@ const Signup = () => {
               {showPassword ? <FiEyeOff /> : <FiEye />}
             </button>
           </motion.div>
-          
+
           <motion.button
             whileHover={{ scale: 1.02, backgroundColor: "#8d0801" }}
             whileTap={{ scale: 0.98 }}
             type="submit"
-            disabled={loading} // Disable while loading
+            disabled={loading}
             className="w-full py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             style={{
               backgroundColor: "#bf0603",
@@ -142,7 +141,7 @@ const Signup = () => {
           </motion.button>
         </form>
 
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.8 }}

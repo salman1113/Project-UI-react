@@ -199,39 +199,39 @@ const FeaturedProducts = () => {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
       {products.slice(0, 4).map((product) => (
         <Link to={`/products/${product.id}`} key={product.id} className="block group">
-           {/* USING TILTED CARD HERE */}
-           <TiltedCard
-              imageSrc={product.image || (product.images && product.images[0]) || "https://via.placeholder.com/400"}
-              altText={product.name}
-              captionText={`₹${Number(product.price).toLocaleString()}`}
-              containerHeight="400px"
-              containerWidth="100%"
-              imageHeight="400px"
-              imageWidth="100%"
-              rotateAmplitude={12}
-              scaleOnHover={1.05}
-              showMobileWarning={false}
-              showTooltip={true}
-              displayOverlayContent={true}
-              overlayContent={
-                <div className="h-full w-full flex flex-col justify-end p-6 bg-gradient-to-t from-black/95 via-black/50 to-transparent">
-                  <h3 className="text-[#E2E2B6] font-bold text-xl truncate drop-shadow-md">
-                    {product.name}
-                  </h3>
-                  <p className="text-gray-300 text-sm line-clamp-2 mt-1 mb-3 opacity-90">
-                    {product.description}
-                  </p>
-                  <div className="flex justify-between items-center border-t border-gray-600/50 pt-3">
-                    <span className="text-white font-bold text-lg">
-                      ₹ {Number(product.price).toLocaleString()}
-                    </span>
-                    <span className="bg-[#E2E2B6] text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                      View Details
-                    </span>
-                  </div>
+          {/* USING TILTED CARD HERE */}
+          <TiltedCard
+            imageSrc={product.image || (product.images && product.images[0]) || "https://via.placeholder.com/400"}
+            altText={product.name}
+            captionText={`₹${Number(product.price).toLocaleString()}`}
+            containerHeight="400px"
+            containerWidth="100%"
+            imageHeight="400px"
+            imageWidth="100%"
+            rotateAmplitude={12}
+            scaleOnHover={1.05}
+            showMobileWarning={false}
+            showTooltip={true}
+            displayOverlayContent={true}
+            overlayContent={
+              <div className="h-full w-full flex flex-col justify-end p-6 bg-gradient-to-t from-black/95 via-black/50 to-transparent">
+                <h3 className="text-[#E2E2B6] font-bold text-xl truncate drop-shadow-md">
+                  {product.name}
+                </h3>
+                <p className="text-gray-300 text-sm line-clamp-2 mt-1 mb-3 opacity-90">
+                  {product.description}
+                </p>
+                <div className="flex justify-between items-center border-t border-gray-600/50 pt-3">
+                  <span className="text-white font-bold text-lg">
+                    ₹ {Number(product.price).toLocaleString()}
+                  </span>
+                  <span className="bg-[#E2E2B6] text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                    View Details
+                  </span>
                 </div>
-              }
-           />
+              </div>
+            }
+          />
         </Link>
       ))}
     </div>
@@ -241,7 +241,7 @@ const FeaturedProducts = () => {
 // --- 3. MAIN HOME COMPONENT ---
 const Home = () => {
   const swiperRef = useRef(null);
-  
+
   const logos = [
     "https://cdn.shopify.com/s/files/1/0548/8849/7221/files/logo_white_text_blue.png",
     "https://cdn.shopify.com/s/files/1/0548/8849/7221/files/logo_white_text_blue.png",

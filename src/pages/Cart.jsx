@@ -17,25 +17,18 @@ const Cart = () => {
   } = useContext(CartContext);
 
   const navigate = useNavigate();
-
-  // ✅ HELPER: Get Image URL Safely
   const getDisplayImage = (item) => {
-    // 1. Check images array
     if (item.images && item.images.length > 0) {
       const firstImg = item.images[0];
-      // If it's an object (New Backend), take .url
       if (typeof firstImg === 'object' && firstImg.url) {
         return firstImg.url;
       }
-      // If it's a string (Old Backend/Link), use directly
       if (typeof firstImg === 'string') {
         return firstImg;
       }
     }
-    // 2. Fallback to legacy single image
     if (item.image) return item.image;
 
-    // 3. Fallback Placeholder
     return "https://via.placeholder.com/150?text=No+Image";
   };
 
@@ -64,10 +57,10 @@ const Cart = () => {
     removeFromCart(id);
   };
 
-  // ✅ INCREMENT WITH VALIDATION
+  // INCREMENT WITH VALIDATION
   const handleIncrement = (e, item) => {
     e.preventDefault();
-    const MAX_LIMIT_PER_USER = 5; // Global Limit
+    const MAX_LIMIT_PER_USER = 5;
 
     // 1. Check User Limit
     if (item.quantity >= MAX_LIMIT_PER_USER) {
@@ -163,8 +156,8 @@ const Cart = () => {
                         onClick={(e) => handleIncrement(e, item)}
                         disabled={isMaxLimit || isOutOfStock}
                         className={`w-8 h-8 flex items-center justify-center rounded transition ${isMaxLimit || isOutOfStock
-                            ? "text-gray-600 cursor-not-allowed"
-                            : "text-[#f4d58d] hover:bg-white/10"
+                          ? "text-gray-600 cursor-not-allowed"
+                          : "text-[#f4d58d] hover:bg-white/10"
                           }`}
                       >
                         +

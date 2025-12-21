@@ -3,7 +3,6 @@ import { Navigate, Outlet } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 
 const AdminProtectedRoute = () => {
-  // ✅ FIX: Use 'isLoading' (Not 'loading')
   const { user, isLoading } = useContext(AuthContext);
 
   if (isLoading) {

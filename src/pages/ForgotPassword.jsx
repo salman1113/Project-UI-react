@@ -16,12 +16,12 @@ const ForgotPassword = () => {
       <div className="max-w-md w-full bg-gray-900 p-8 rounded-xl border border-gray-800">
         <h2 className="text-2xl font-bold text-[#E2E2B6] mb-4 text-center">Reset Password</h2>
         <p className="text-gray-400 text-center mb-6">Enter your email address and we'll send you a link to reset your password.</p>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-400 mb-2 text-sm">Email Address</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -33,7 +33,7 @@ const ForgotPassword = () => {
           </button>
         </form>
         <div className="mt-4 text-center">
-            <Link to="/login" className="text-gray-500 hover:text-white text-sm">Back to Login</Link>
+          <Link to="/login" className="text-gray-500 hover:text-white text-sm">Back to Login</Link>
         </div>
       </div>
     </div>

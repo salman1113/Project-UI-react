@@ -41,28 +41,20 @@ const Navbar = () => {
   const cartContext = useContext(CartContext);
   const wishlistContext = useContext(WishlistContext);
 
-  // --- 🌟 HELPER: Safe Image Extraction ---
   const getProductImage = (product) => {
-    // 1. Check images array
     if (product?.images && product.images.length > 0) {
-        const firstImg = product.images[0];
-        // If object (New Backend), return .url
-        if (typeof firstImg === 'object' && firstImg.url) {
-            return firstImg.url;
-        }
-        // If string (Legacy/External), return directly
-        if (typeof firstImg === 'string') {
-            return firstImg;
-        }
+      const firstImg = product.images[0];
+      if (typeof firstImg === 'object' && firstImg.url) {
+        return firstImg.url;
+      }
+      if (typeof firstImg === 'string') {
+        return firstImg;
+      }
     }
-    // 2. Legacy single image
     if (product?.image) return product.image;
-
-    // 3. Fallback
     return "https://via.placeholder.com/150?text=No+Image";
   };
 
-  // --- ROBUST API FETCHING ---
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -75,7 +67,6 @@ const Navbar = () => {
 
         const data = await response.json();
 
-        // Handle various API response structures
         if (Array.isArray(data)) {
           setProducts(data);
         } else if (data.results && Array.isArray(data.results)) {
@@ -109,7 +100,6 @@ const Navbar = () => {
       .slice(0, 3);
   }, [products]);
 
-  // Context Checks
   if (!authContext || !cartContext || !wishlistContext) return null;
 
   const { user, logoutUser } = authContext;
@@ -293,28 +283,28 @@ const Navbar = () => {
                 }}
                 className="flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#f4d58d] rounded-full p-0.5 border border-[#708d81]/50 transition-all hover:shadow-lg"
               >
-                <img 
-                    src={userImage} 
-                    alt="Profile" 
-                    className="h-9 w-9 rounded-full object-cover" 
-                    onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = defaultAvatar;
-                    }}
+                <img
+                  src={userImage}
+                  alt="Profile"
+                  className="h-9 w-9 rounded-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = defaultAvatar;
+                  }}
                 />
               </button>
 
               {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-72 bg-[#001427] border border-[#708d81]/20 rounded-2xl shadow-2xl z-50 overflow-hidden text-sm">
                   <div className="px-6 py-5 flex flex-col items-center border-b border-[#708d81]/20 bg-[#001c3d]/50">
-                    <img 
-                        src={userImage} 
-                        alt="User" 
-                        className="h-16 w-16 rounded-full mb-3 border-2 border-[#f4d58d]" 
-                        onError={(e) => {
-                            e.target.onerror = null; 
-                            e.target.src = defaultAvatar;
-                        }}
+                    <img
+                      src={userImage}
+                      alt="User"
+                      className="h-16 w-16 rounded-full mb-3 border-2 border-[#f4d58d]"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = defaultAvatar;
+                      }}
                     />
                     <p className="text-[#f4d58d] font-semibold text-lg">{displayName}</p>
                     <p className="text-[#708d81] text-xs mt-1">{user.email}</p>

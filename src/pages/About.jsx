@@ -2,7 +2,6 @@ import { motion } from "framer-motion";
 import { FiHeadphones, FiActivity, FiShield, FiCpu, FiMusic, FiAward } from "react-icons/fi";
 
 const About = () => {
-  // Animation Variants
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -34,7 +33,7 @@ const About = () => {
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#f4d58d]/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
 
       <div className="max-w-6xl mx-auto px-6 py-20 relative z-10">
-        
+
         {/* --- HERO SECTION --- */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
@@ -46,13 +45,13 @@ const About = () => {
             Redefining <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#bf0603] to-[#d64040]">Sound.</span>
           </h1>
           <p className="text-lg md:text-xl text-[#708d81]/80 max-w-2xl mx-auto leading-relaxed">
-            At <span className="font-bold text-[#f2e8cf]">ECHO BAY</span>, we don't just build headsets. 
+            At <span className="font-bold text-[#f2e8cf]">ECHO BAY</span>, we don't just build headsets.
             We engineer acoustic experiences for those who listen closely.
           </p>
         </motion.div>
 
         {/* --- STATS GRID --- */}
-        <motion.div 
+        <motion.div
           variants={container}
           initial="hidden"
           animate="show"
@@ -89,8 +88,8 @@ const About = () => {
               <FiHeadphones className="mr-3" /> Our Mission
             </h2>
             <p className="text-[#708d81] leading-relaxed text-lg">
-              We strive to bridge the gap between studio-grade professional audio and everyday durability. 
-              Whether you are an audiophile identifying every nuance or a gamer needing distinct spatial cues, 
+              We strive to bridge the gap between studio-grade professional audio and everyday durability.
+              Whether you are an audiophile identifying every nuance or a gamer needing distinct spatial cues,
               Echo Bay delivers precision without compromise.
             </p>
           </motion.div>
@@ -116,7 +115,7 @@ const About = () => {
                 </li>
               ))}
             </ul>
-            
+
           </motion.div>
 
           {/* Products Card */}
@@ -151,8 +150,8 @@ const About = () => {
             <h2 className="text-2xl font-bold text-[#f4d58d] mb-4">Engineering Precision</h2>
             <div className="flex flex-col md:flex-row gap-6 items-center">
               <p className="text-[#708d81] leading-relaxed flex-1">
-                Every headset features custom-tuned drivers.  We utilize memory foam ear cups that adapt to your shape, ensuring comfort during those 
-                long listening sessions. Our Active Noise Cancellation algorithms are updated regularly to filter out 
+                Every headset features custom-tuned drivers.  We utilize memory foam ear cups that adapt to your shape, ensuring comfort during those
+                long listening sessions. Our Active Noise Cancellation algorithms are updated regularly to filter out
                 modern distractions.
               </p>
               <div className="w-full md:w-1/3 p-4 bg-[#bf0603]/10 rounded-xl border border-[#bf0603]/30 text-center">

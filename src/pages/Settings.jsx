@@ -98,21 +98,19 @@ const Settings = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 👇 ഈ ഫങ്ക്ഷൻ ആണ് ഫോം ക്ലോസ് ചെയ്യാനും റീസെറ്റ് ചെയ്യാനും ഉപയോഗിക്കുന്നത്
   const handleCancelEdit = () => {
     setShowAddressForm(false);
     setNewAddress({ name: '', phone: '', street: '', city: '', state: '', zip_code: '' });
     setEditingId(null);
   };
 
-  // 👇 NEW: "Add New" ബട്ടൺ അമർത്തുമ്പോൾ പ്രവർത്തിക്കുന്ന ഫങ്ക്ഷൻ
   const handleAddNewClick = () => {
     if (showAddressForm) {
-      handleCancelEdit(); // ഫോം തുറന്നിട്ടുണ്ടെങ്കിൽ ക്ലോസ് ചെയ്യുക
+      handleCancelEdit();
     } else {
-      setNewAddress({ name: '', phone: '', street: '', city: '', state: '', zip_code: '' }); // ക്ലിയർ ചെയ്യുക
-      setEditingId(null); // എഡിറ്റിംഗ് അല്ലെന്ന് ഉറപ്പാക്കുക
-      setShowAddressForm(true); // ഫോം തുറക്കുക
+      setNewAddress({ name: '', phone: '', street: '', city: '', state: '', zip_code: '' });
+      setEditingId(null);
+      setShowAddressForm(true);
     }
   };
 
@@ -191,7 +189,7 @@ const Settings = () => {
               <h2 className="text-xl font-bold text-white text-center">{user?.name}</h2>
               <p className="text-gray-400 text-sm text-center">{user?.email}</p>
             </div>
-            
+
 
             <nav className="space-y-2">
               <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === 'profile' ? 'bg-[#E2E2B6] text-[#020617]' : 'text-gray-400 hover:bg-gray-800'}`}>
@@ -248,7 +246,6 @@ const Settings = () => {
                   <div className="flex justify-between items-center border-b border-gray-800 pb-4 mb-6">
                     <h3 className="text-xl font-bold text-white">Manage Addresses</h3>
 
-                    {/* 👇 UPDATED BUTTON: handleAddNewClick ഉപയോഗിക്കുന്നു */}
                     <button onClick={handleAddNewClick} className="text-[#E2E2B6] flex items-center text-sm hover:text-white transition-colors">
                       {showAddressForm ? <FiXCircle className="mr-1" /> : <FiPlus className="mr-1" />}
                       {showAddressForm ? "Cancel" : "Add New"}
