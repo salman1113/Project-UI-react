@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "react-toastify"; // Toast import
 import { motion } from "framer-motion";
 import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 
@@ -28,7 +28,41 @@ const Signup = () => {
     try {
       await signupUser(form, navigate, toast);
     } catch (error) {
-      console.error("Signup failed", error);
+      console.error("Signup Failed:", error);
+
+      if (error.response && error.response.data) {
+        const errData = error.response.data;
+
+        // 👇 FIX: Check inside 'detail' if it exists
+        const actualErrors = errData.detail || errData;
+
+        // 1. Email Error
+        if (actualErrors.email) {
+          toast.error(actualErrors.email[0]); // "This email is already registered."
+        }
+        // 2. Username Error
+        else if (actualErrors.username) {
+          toast.error(actualErrors.username[0]);
+        }
+        // 3. Password Error
+        else if (actualErrors.password) {
+          toast.error(actualErrors.password[0]);
+        }
+        // 4. Other Errors (Generic)
+        else {
+          // If 'error' key exists (like "Request Failed")
+          if (errData.error) {
+            toast.error(errData.error);
+          } else {
+            // Fallback: Show first available error
+            const messages = Object.values(actualErrors).flat();
+            if (messages.length > 0) toast.error(messages[0]);
+            else toast.error("Registration failed.");
+          }
+        }
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

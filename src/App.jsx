@@ -15,7 +15,7 @@ import AdminLayout from "./admin/components/AdminLayout";
 import { PrivateRoute, PublicRoute } from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
-// Pages
+// User Pages
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Products from "./pages/Products";
@@ -35,19 +35,19 @@ import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 // Admin Pages
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminOrders from "./admin/pages/AdminOrders";
+import Notifications from "./pages/Notifications";
 import AdminProducts from "./admin/pages/AdminProducts";
 import AdminUsers from "./admin/pages/AdminUsers";
 
 const App = () => {
   return (
-
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
           <ToastContainer position="bottom-left" autoClose={2000} theme="dark" />
 
           <Routes>
-            {/* ADMIN ROUTES */}
+            {/* 🛡️ ADMIN ROUTES */}
             <Route path="/admin" element={<AdminProtectedRoute />}>
               <Route element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
@@ -57,13 +57,14 @@ const App = () => {
               </Route>
             </Route>
 
-            {/*  USER ROUTES */}
+            {/* 👤 USER ROUTES */}
             <Route element={<UserLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetails />} />
 
+              {/* Public Routes (Logged out users only) */}
               <Route element={<PublicRoute />}>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -71,11 +72,13 @@ const App = () => {
                 <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
               </Route>
 
+              {/* Private Routes (Logged in users only) */}
               <Route element={<PrivateRoute />}>
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/orders" element={<Orders />} />
+                <Route path="/notifications" element={<Notifications />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/success" element={<Success />} />
               </Route>

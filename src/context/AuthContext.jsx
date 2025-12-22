@@ -47,7 +47,6 @@ export const AuthProvider = ({ children }) => {
     navigate("/login");
   }, [navigate]);
 
-  // --- SIGNUP ---
   const signupUser = useCallback(async (form, navigate, toast) => {
     const { name, email, password } = form;
     try {
@@ -59,8 +58,7 @@ export const AuthProvider = ({ children }) => {
       toast.success("Signup successful! Please login.");
       navigate("/login");
     } catch (err) {
-      const errorMsg = err.response?.data?.username?.[0] || err.response?.data?.email?.[0] || "Signup failed";
-      toast.error(errorMsg);
+      throw err; 
     }
   }, []);
 
