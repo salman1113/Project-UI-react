@@ -25,18 +25,18 @@ const Checkout = () => {
     name: "", phone: "", street: "", city: "", state: "", zip_code: "", is_default: false
   });
 
-  // 1. PROTECTION: CHECK USER & EMPTY CART
+  // 1. PROTECTION: CHECK USER & EMPTY CART (FIXED 🛠️)
   useEffect(() => {
     if (!user) {
       toast.warn("Please login to checkout");
       navigate("/login");
-    } else if (cart.length === 0) {
-      toast.warn("Your cart is empty!");
-      navigate("/products");
+    } else if (cart.length === 0 && !loading) { 
+      // ⚠️ മാറ്റം ഇവിടെ: loading നടക്കുന്ന സമയത്താണെങ്കിൽ Redirect ചെയ്യരുത്
+      navigate("/products", { replace: true });
     } else {
       fetchAddresses();
     }
-  }, [user, cart, navigate]);
+  }, [user, cart, navigate, loading]); // loading dependency ചേർത്തു
 
   const fetchAddresses = async () => {
     try {
@@ -52,12 +52,10 @@ const Checkout = () => {
     }
   };
 
-  // 2. Handle New Address Input
   const handleAddressChange = (e) => {
     setNewAddress({ ...newAddress, [e.target.name]: e.target.value });
   };
 
-  // 3. Save New Address via API
   const saveAddress = async () => {
     if (!newAddress.name || !newAddress.street || !newAddress.city || !newAddress.zip_code || !newAddress.phone) {
       toast.warn("Please fill all required fields");
@@ -74,7 +72,6 @@ const Checkout = () => {
     }
   };
 
-  // RAZORPAY SCRIPT LOADER
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -85,24 +82,29 @@ const Checkout = () => {
     });
   };
 
-  // 4. Handle Online Payment (Razorpay Logic)
+  // 4. Handle Online Payment (Razorpay Logic) - FIXED 🛠️
   const handleOnlinePayment = async (orderId, amount) => {
     const isLoaded = await loadRazorpay();
     if (!isLoaded) {
       toast.error("Razorpay SDK failed to load");
+      setLoading(false);
       return;
     }
 
     try {
-      const { data } = await api.post("/payment/create/", { total_amount: amount });
+      const { data } = await api.post("/payment/create/", {
+        amount: amount,
+        order_id: orderId
+      });
 
       const options = {
         key: data.key_id,
         amount: data.amount,
         currency: data.currency,
         name: "EchoBay",
-        description: "Order Payment",
-        order_id: data.razorpay_order_id,
+        description: `Order #${orderId}`,
+        order_id: data.id,
+
         handler: async function (response) {
           try {
             await api.post("/payment/verify/", {
@@ -112,16 +114,22 @@ const Checkout = () => {
               order_id: orderId
             });
 
-            toast.success("Payment Successful! Order Placed.");
-            clearCart();
+            // ⚠️ Loading FALSE ആക്കരുത്. Success Page വരുന്നത് വരെ Processing കാണിക്കണം.
+            // setLoading(false); <--- ഇത് ഒഴിവാക്കി
 
-            // PASS STATE TO SUCCESS PAGE
+            toast.success("Payment Successful!");
+            clearCart(); // കാർട്ട് ക്ലിയർ ചെയ്താലും products പേജിലേക്ക് പോകില്ല (useEffect fix കാരണം)
+
+            // Direct Navigation (No delay needed if loading stays true)
             navigate("/success", {
-              state: { fromCheckout: true, orderId: orderId }
+                state: { fromCheckout: true, orderId: orderId },
+                replace: true
             });
 
           } catch (err) {
+            console.error(err);
             toast.error("Payment Verification Failed");
+            setLoading(false); // Error വന്നാൽ മാത്രം Loading മാറ്റുക
             navigate("/orders");
           }
         },
@@ -130,22 +138,30 @@ const Checkout = () => {
           email: user.email || "",
           contact: addresses.find(a => a.id === selectedAddressId)?.phone || ""
         },
-        theme: { color: "#8d0801" },
+        theme: { color: "#bf0603" },
+        modal: {
+          ondismiss: function () {
+            toast.info("Payment Cancelled");
+            setLoading(false);
+          }
+        }
       };
 
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", function (response) {
         toast.error("Payment Failed: " + response.error.description);
+        setLoading(false);
       });
       rzp.open();
 
     } catch (err) {
       console.error(err);
       toast.error("Failed to initiate payment. Please try again.");
+      setLoading(false);
     }
   };
 
-  // 5. Final Submit Logic
+  // 5. Final Submit Logic - FIXED 🛠️
   const handleSubmit = async () => {
     if (!selectedAddressId) {
       toast.warn("Please select a shipping address");
@@ -155,6 +171,12 @@ const Checkout = () => {
     setLoading(true);
 
     const selectedAddrObject = addresses.find(a => a.id === selectedAddressId);
+    if (!selectedAddrObject) {
+      toast.error("Selected address not found!");
+      setLoading(false);
+      return;
+    }
+
     const finalTotal = paymentMethod === "cod" ? totalPrice + 50 : totalPrice;
 
     try {
@@ -167,24 +189,30 @@ const Checkout = () => {
       if (paymentMethod === "online") {
         await handleOnlinePayment(res.data.order_id, finalTotal);
       } else {
-        // If COD -> Direct Success
+        // COD SUCCESS
         toast.success("Order placed successfully!");
         clearCart();
+        
+        // ⚠️ Loading മാറ്റരുത്. Success Page വരുന്നത് വരെ കാത്തിരിക്കുക.
+        // setLoading(false); <--- ഇത് ഒഴിവാക്കി
 
         navigate("/success", {
-          state: { fromCheckout: true, orderId: res.data.order_id }
+          state: { fromCheckout: true, orderId: res.data.order_id },
+          replace: true
         });
       }
 
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.error || "Order failed. Please check stock.");
-    } finally {
-      setLoading(false);
+      if (err.response && err.response.data) {
+        toast.error(err.response.data.error || "Order failed.");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+      setLoading(false); // Error വന്നാൽ മാത്രം Loading മാറ്റുക
     }
   };
 
-  // Navigation Helpers
   const nextStep = () => {
     if (currentStep === 1 && !selectedAddressId && !isAddingNew) {
       toast.warn("Please select an address");
@@ -232,7 +260,6 @@ const Checkout = () => {
               </button>
             </div>
 
-            {/* Address List */}
             {!isAddingNew && (
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 {addresses.map((addr) => (
@@ -253,7 +280,6 @@ const Checkout = () => {
                     <p className="text-sm text-[#708d81] mt-2 font-mono">📞 {addr.phone}</p>
                   </div>
                 ))}
-
                 {addresses.length === 0 && (
                   <div className="col-span-2 text-center py-10 border border-dashed border-[#708d81] rounded-lg">
                     <p className="text-[#708d81] mb-2">No saved addresses found.</p>
@@ -263,7 +289,6 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Add New Address Form */}
             {isAddingNew && (
               <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-[#001427]/50 p-6 rounded-lg border border-[#708d81]/30">
                 <h4 className="text-lg font-bold text-[#f4d58d] mb-4">Add New Address</h4>
@@ -321,7 +346,6 @@ const Checkout = () => {
             <h3 className="text-xl font-semibold text-[#f4d58d] mb-4">Order Summary</h3>
             <div className="bg-[#0f1b32] p-6 rounded-lg border border-[#708d81]/30">
 
-              {/* Product List */}
               <div className="space-y-3 mb-4">
                 {cart.map(item => (
                   <div key={item.id} className="flex justify-between items-center py-2 border-b border-[#708d81]/20">
@@ -334,14 +358,12 @@ const Checkout = () => {
                 ))}
               </div>
 
-              {/* Delivery Address Preview */}
               <div className="mb-4 p-3 bg-[#001427] rounded text-sm text-[#708d81]">
                 <p className="font-bold text-[#f2e8cf] mb-1">Delivering to:</p>
                 {addresses.find(a => a.id === selectedAddressId)?.name}, <br />
                 {addresses.find(a => a.id === selectedAddressId)?.street}, {addresses.find(a => a.id === selectedAddressId)?.city}
               </div>
 
-              {/* Price Breakdown */}
               <div className="flex justify-between mt-4 text-[#708d81]">
                 <span>Subtotal</span>
                 <span>₹{totalPrice}</span>

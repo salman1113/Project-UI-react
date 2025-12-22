@@ -1,26 +1,39 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, Navigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // useNavigate import cheyyuka
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
 import { FiShoppingBag, FiPackage, FiCheck } from "react-icons/fi";
 
 const Success = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [windowDimension, setWindowDimension] = useState({ width: window.innerWidth, height: window.innerHeight });
-  if (!location.state || !location.state.fromCheckout) {
-    return <Navigate to="/" replace />;
-  }
-  const orderId = location.state?.orderId || "EB-ORDER";
+
+  // Order ID സുരക്ഷിതമായി എടുക്കുന്നു
+  const orderId = location.state?.orderId || "PENDING";
+  const isValidAccess = location.state?.fromCheckout;
 
   useEffect(() => {
+    // വിൻഡോ റീസൈസ് ചെയ്യുമ്പോൾ കോൺഫെറ്റി ശരിയാക്കാൻ
     const handleResize = () => setWindowDimension({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", handleResize);
+    
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // 🛑 സെക്യൂരിറ്റി ചെക്ക് (Optional): 
+  // ഇത് കമന്റ് ചെയ്ത് വെക്കുന്നതാണ് നല്ലത്, കാരണം ചിലപ്പോൾ Razorpay Redirect ചെയ്യുമ്പോൾ State നഷ്ടപ്പെട്ടേക്കാം.
+  /* useEffect(() => {
+    if (!isValidAccess) {
+       navigate("/");
+    }
+  }, [isValidAccess, navigate]);
+  */
+
   return (
     <div className="relative min-h-screen bg-[#001427] flex items-center justify-center px-4 overflow-hidden">
-
+      
+      {/* Confetti Animation */}
       <Confetti width={windowDimension.width} height={windowDimension.height} numberOfPieces={200} recycle={false} gravity={0.2} />
 
       <motion.div
