@@ -16,8 +16,9 @@ import {
   FiBox,
   FiChevronRight,
   FiLoader,
-  FiBell, // 🔔
-  FiInbox // Used for empty state
+  FiBell,
+  FiInbox,
+  FiLayout // ✅ 1. Added FiLayout icon
 } from "react-icons/fi";
 
 const Navbar = () => {
@@ -209,6 +210,17 @@ const Navbar = () => {
             )}
           </div>
           <Link to="/about" className={getNavLinkClass("/about")} onClick={() => setActivePage("/about")}>About</Link>
+          
+          {/* ✅ 2. ADMIN PANEL BUTTON (Visible only to Admin) */}
+          {user?.is_superuser && (
+              <Link 
+                to="/admin" 
+                className="flex items-center gap-2 bg-[#bf0603] text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-red-700 transition-all shadow-md border border-red-500/50"
+              >
+                <FiLayout /> Admin
+              </Link>
+          )}
+
         </div>
 
         {/* RIGHT ICONS */}
@@ -350,6 +362,14 @@ const Navbar = () => {
         <div className="md:hidden bg-[#001427] border-t border-[#708d81]/20 absolute top-full left-0 right-0 z-40 py-4 px-6 shadow-xl" ref={mobileMenuRef}>
           <div className="flex flex-col space-y-4">
             <Link to="/" className={getNavLinkClass("/")} onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
+            
+            {/* ✅ 3. MOBILE ADMIN BUTTON */}
+            {user?.is_superuser && (
+              <Link to="/admin" className="text-[#bf0603] font-bold block flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                 <FiLayout /> Admin Panel
+              </Link>
+            )}
+
             <div className="border-l-2 border-[#f4d58d] pl-3 ml-1 space-y-2">
               <Link to="/products" className="text-[#f4d58d] font-bold block" onClick={() => setIsMobileMenuOpen(false)}>All Products</Link>
               {categories.slice(0, 4).map(cat => (

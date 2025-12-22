@@ -4,9 +4,11 @@ import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FiPackage, FiCheckCircle, FiTruck, FiClock, FiChevronLeft, FiChevronRight, 
-  FiXCircle, FiCreditCard, FiChevronDown, FiChevronUp, FiMapPin, FiActivity
+  FiPackage, FiCheckCircle, FiTruck, FiClock, FiChevronLeft, FiChevronRight,
+  FiXCircle, FiCreditCard, FiChevronDown, FiChevronUp, FiMapPin, FiActivity, FiDownload
 } from "react-icons/fi";
+// 👇 IMPORT THE INVOICE GENERATOR FUNCTION
+import { downloadInvoice } from "../utils/invoiceGenerator"; 
 
 // --- SUB COMPONENT: INDIVIDUAL ORDER CARD ---
 const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
@@ -171,7 +173,16 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
       </AnimatePresence>
 
       {/* 5. FOOTER ACTIONS */}
-      <div className="p-6 border-t border-[#708d81]/20 flex justify-end gap-3 bg-[#001427]/30">
+      <div className="p-6 border-t border-[#708d81]/20 flex flex-wrap justify-end gap-3 bg-[#001427]/30">
+        
+        {/* 👇 INVOICE DOWNLOAD BUTTON ADDED HERE */}
+        <button 
+          onClick={() => downloadInvoice(order)} 
+          className="flex items-center gap-2 px-4 py-2 border border-[#708d81]/50 text-[#708d81] rounded-lg hover:border-[#f4d58d] hover:text-[#f4d58d] transition-all text-sm font-medium"
+        >
+          <FiDownload /> Download Invoice
+        </button>
+
         {order.status === 'pending_payment' && (
           <button onClick={() => onRetryPayment(order.id)} className="flex items-center gap-2 px-4 py-2 bg-[#bf0603] text-white rounded-lg hover:bg-[#8d0801] transition-all text-sm font-medium">
             <FiCreditCard /> Pay Now
