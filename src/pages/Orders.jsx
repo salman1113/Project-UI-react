@@ -4,7 +4,8 @@ import { toast } from "react-toastify";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FiPackage, FiCheckCircle, FiTruck, FiClock, FiChevronLeft, FiChevronRight, FiXCircle, FiCreditCard, FiChevronDown, FiChevronUp, FiMapPin, FiActivity
+  FiPackage, FiCheckCircle, FiTruck, FiClock, FiChevronLeft, FiChevronRight, 
+  FiXCircle, FiCreditCard, FiChevronDown, FiChevronUp, FiMapPin, FiActivity
 } from "react-icons/fi";
 
 // --- SUB COMPONENT: INDIVIDUAL ORDER CARD ---
@@ -12,7 +13,6 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
   const [showTracking, setShowTracking] = useState(false);
   const [showShipping, setShowShipping] = useState(false);
 
-  // Helper: Status Colors
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "pending": case "pending_payment": return "text-yellow-500 bg-yellow-500/10 border-yellow-500/20";
@@ -23,7 +23,6 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
     }
   };
 
-  // Helper: Tracking Steps
   const getTrackingSteps = (status) => {
     const steps = [
       { label: 'Ordered', icon: <FiClock /> },
@@ -50,7 +49,7 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
       animate={{ opacity: 1, y: 0 }}
       className="bg-[#001c3d] rounded-xl shadow-xl overflow-hidden border border-[#708d81]/20 mb-6"
     >
-      {/* 1. HEADER (Always Visible) */}
+      {/* 1. HEADER */}
       <div className="p-6 border-b border-[#708d81]/20 bg-[#001427]/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h3 className="text-lg font-bold text-[#f4d58d] flex items-center gap-2">
@@ -68,12 +67,20 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
         </div>
       </div>
 
-      {/* 2. ORDER ITEMS (Always Visible) */}
+      {/* 2. ORDER ITEMS */}
       <div className="p-6 space-y-4">
         {order.items?.map((item, idx) => (
           <div key={idx} className="flex items-center gap-4 bg-[#001427] p-3 rounded-lg border border-[#708d81]/10">
             <div className="w-16 h-16 bg-black rounded-md overflow-hidden flex-shrink-0">
-              <img src={item.image} alt={item.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = "/default-product.png"; }} />
+              <img
+                src={item.product_image || "/default-product.png"}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/default-product.png";
+                }}
+              />
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-[#f2e8cf]">{item.name}</h4>
@@ -89,7 +96,6 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
 
       {/* 3. DROPDOWN TOGGLES */}
       <div className="px-6 pb-4 flex flex-wrap gap-4">
-        {/* Toggle Tracking */}
         <button
           onClick={() => setShowTracking(!showTracking)}
           className="flex items-center gap-2 text-sm text-[#f4d58d] hover:text-white transition-colors"
@@ -97,7 +103,6 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
           <FiActivity /> {showTracking ? "Hide Tracking" : "Track Order"} {showTracking ? <FiChevronUp /> : <FiChevronDown />}
         </button>
 
-        {/* Toggle Shipping */}
         <button
           onClick={() => setShowShipping(!showShipping)}
           className="flex items-center gap-2 text-sm text-[#708d81] hover:text-white transition-colors"
@@ -108,7 +113,7 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
 
       {/* 4. EXPANDABLE SECTIONS */}
       <AnimatePresence>
-        {/* A. Tracking Timeline Dropdown */}
+        {/* A. Tracking Timeline */}
         {showTracking && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
@@ -138,7 +143,7 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
           </motion.div>
         )}
 
-        {/* B. Shipping Details Dropdown */}
+        {/* B. Shipping Details */}
         {showShipping && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
@@ -165,7 +170,7 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
         )}
       </AnimatePresence>
 
-      {/* 5. FOOTER ACTIONS (Always Visible) */}
+      {/* 5. FOOTER ACTIONS */}
       <div className="p-6 border-t border-[#708d81]/20 flex justify-end gap-3 bg-[#001427]/30">
         {order.status === 'pending_payment' && (
           <button onClick={() => onRetryPayment(order.id)} className="flex items-center gap-2 px-4 py-2 bg-[#bf0603] text-white rounded-lg hover:bg-[#8d0801] transition-all text-sm font-medium">
@@ -182,14 +187,12 @@ const OrderCard = ({ order, onRetryPayment, onCancelOrder }) => {
   );
 };
 
-
 // --- MAIN COMPONENT ---
 const Orders = () => {
-  // ✅ FIX: Extract 'tokens' from AuthContext
   const { user, tokens } = useContext(AuthContext);
   const api = useAxios();
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false); // Default false, wait for tokens
+  const [loading, setLoading] = useState(false);
 
   const [nextPage, setNextPage] = useState(null);
   const [prevPage, setPrevPage] = useState(null);
@@ -197,7 +200,6 @@ const Orders = () => {
 
   const navigate = useNavigate();
 
-  // --- FETCH ORDERS ---
   const fetchOrders = async (url) => {
     try {
       setLoading(true);
@@ -219,20 +221,17 @@ const Orders = () => {
         shipping: order.shipping_details,
         paymentMethod: order.payment_method,
         items: order.items.map(item => ({
-          name: item.product.name,
-          category: item.product.category,
+          name: item.product_name,
+          category: item.product?.category || "General",
           price: item.price,
           quantity: item.quantity,
-          image: item.product.images && item.product.images.length > 0
-            ? item.product.images[0]
-            : "/default-product.png"
+          product_image: item.product_image 
         }))
       }));
 
       setOrders(transformedOrders);
     } catch (err) {
       console.error("Order Fetch Error:", err);
-      // Don't show generic error on 401, handled globally
       if (err.response?.status !== 401) {
         toast.error("Failed to fetch orders");
       }
@@ -241,7 +240,6 @@ const Orders = () => {
     }
   };
 
-  // ✅ FIX: UseEffect waits for 'tokens' to be ready
   useEffect(() => {
     if (!user) {
       toast.warn("Please login to view your orders");
@@ -249,13 +247,11 @@ const Orders = () => {
       return;
     }
 
-    // 🔥 Only fetch if tokens exist
     if (tokens) {
       fetchOrders(currentUrl);
     }
   }, [user, tokens, navigate, api, currentUrl]);
 
-  // --- HELPERS ---
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
