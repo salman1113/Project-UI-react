@@ -140,10 +140,30 @@ function TiltedCard({
 }
 
 // --- 2. FEATURED  productS COMPONENT ---
+// --- 2. FEATURED PRODUCTS COMPONENT (Final & Clean) ---
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // 👇 IMAGE URL FIXING FUNCTION
+  const getImageUrl = (product) => {
+    // 1. Check 'images' array first (Priority)
+    if (product.images && product.images.length > 0) {
+      const firstImage = product.images[0].url;
+      if (firstImage.startsWith("http")) return firstImage;
+      return `http://localhost:8000${firstImage}`;
+    }
+
+    // 2. Check 'image' field
+    if (product.image) {
+      if (product.image.startsWith("http")) return product.image;
+      return `http://localhost:8000${product.image}`;
+    }
+
+    // 3. Fallback
+    return "https://via.placeholder.com/400?text=No+Image";
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -155,6 +175,7 @@ const FeaturedProducts = () => {
           data = data.results;
         }
 
+        // ✅ FILTER RESTORED: Active ആയത് മാത്രം കാണിക്കുന്നു
         const activeProducts = Array.isArray(data)
           ? data.filter(p => p.is_active !== false)
           : [];
@@ -199,9 +220,8 @@ const FeaturedProducts = () => {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
       {products.slice(0, 4).map((product) => (
         <Link to={`/products/${product.id}`} key={product.id} className="block group">
-          {/* USING TILTED CARD HERE */}
           <TiltedCard
-            imageSrc={product.image || (product.images && product.images[0]) || "https://via.placeholder.com/400"}
+            imageSrc={getImageUrl(product)} // ✅ Image fix applied
             altText={product.name}
             captionText={`₹${Number(product.price).toLocaleString()}`}
             containerHeight="400px"
