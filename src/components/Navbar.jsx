@@ -287,9 +287,12 @@ const Navbar = () => {
                   src={userImage}
                   alt="Profile"
                   className="h-9 w-9 rounded-full object-cover"
+                  referrerPolicy="no-referrer" 
                   onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = defaultAvatar;
+                    if (e.target.src !== defaultAvatar) {
+                      e.target.onerror = null;
+                      e.target.src = defaultAvatar;
+                    }
                   }}
                 />
               </button>
