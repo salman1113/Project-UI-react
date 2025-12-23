@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // Toast import
+import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
 
@@ -33,12 +33,12 @@ const Signup = () => {
       if (error.response && error.response.data) {
         const errData = error.response.data;
 
-        // 👇 FIX: Check inside 'detail' if it exists
+        // Check inside 'detail' if it exists
         const actualErrors = errData.detail || errData;
 
         // 1. Email Error
         if (actualErrors.email) {
-          toast.error(actualErrors.email[0]); // "This email is already registered."
+          toast.error(actualErrors.email[0]);
         }
         // 2. Username Error
         else if (actualErrors.username) {
@@ -50,11 +50,9 @@ const Signup = () => {
         }
         // 4. Other Errors (Generic)
         else {
-          // If 'error' key exists (like "Request Failed")
           if (errData.error) {
             toast.error(errData.error);
           } else {
-            // Fallback: Show first available error
             const messages = Object.values(actualErrors).flat();
             if (messages.length > 0) toast.error(messages[0]);
             else toast.error("Registration failed.");
@@ -74,7 +72,9 @@ const Signup = () => {
       style={{
         backgroundImage: "url('https://www.apple.com/v/airpods-max/i/images/overview/product-stories/anc/anc_airpod_max_lifestyle__duzobvqwpz42_large_2x.jpg')",
         backgroundPosition: "center",
-        backgroundAttachment: "fixed",
+        backgroundSize: "cover",       // ✅ Fix: Covers the screen properly
+        backgroundRepeat: "no-repeat", // ✅ Fix: Prevents tiling
+        backgroundAttachment: "fixed", // ✅ Fix: Parallax effect
       }}
     >
       <motion.div

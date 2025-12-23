@@ -118,7 +118,7 @@ const AdminDashboard = () => {
       return (
         <div className="bg-[#0a192f] p-3 border border-[#233554] rounded-lg shadow-xl">
           <p className="text-gray-400 text-xs mb-1">{label}</p>
-          <p className="text-[#f4d58d] font-bold text-sm">₹{payload[0].value.toLocaleString()}</p>
+          <p className="text-[#f4d58d] font-bold text-sm">{payload[0].value.toLocaleString()}</p>
           {payload[0].payload.orders !== undefined && (
              <p className="text-blue-400 text-xs mt-1">Orders: {payload[0].payload.orders}</p>
           )}

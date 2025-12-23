@@ -57,20 +57,12 @@ const App = () => {
               </Route>
             </Route>
 
-            {/* 👤 USER ROUTES */}
+            {/* 👤 USER ROUTES (WITH NAVBAR & FOOTER) */}
             <Route element={<UserLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetails />} />
-
-              {/* Public Routes (Logged out users only) */}
-              <Route element={<PublicRoute />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
-              </Route>
 
               {/* Private Routes (Logged in users only) */}
               <Route element={<PrivateRoute />}>
@@ -83,8 +75,19 @@ const App = () => {
                 <Route path="/success" element={<Success />} />
               </Route>
 
+              {/* 404 Page (Shows Navbar) */}
               <Route path="*" element={<NotFound />} />
             </Route>
+
+            {/* 🔓 PUBLIC ROUTES (NO NAVBAR & NO FOOTER) */}
+            {/* Moved outside UserLayout so Navbar/Footer won't show */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/password-reset/confirm/:uid/:token" element={<ResetPasswordConfirm />} />
+            </Route>
+
           </Routes>
 
         </WishlistProvider>
