@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAxios } from "../../context/AuthContext";
-import { FiEdit, FiTrash2, FiBox, FiSearch, FiUpload, FiEye, FiStar, FiX, FiCheck, FiImage } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiBox, FiSearch, FiUpload, FiEye, FiStar, FiX, FiCheck, FiImage, FiPlus } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,11 +18,13 @@ const AdminProducts = () => {
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [deletedImageIds, setDeletedImageIds] = useState([]);
 
+  // ✅ Category State (For adding new categories)
+  const [categories, setCategories] = useState(["Boat", "Apple", "Sony", "Bose", "Redmi"]);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "", description: "", price: "", count: "", category: "", isActive: true
   });
-
-  const categories = ["Boat", "Apple", "Sony", "Bose", "Redmi"];
 
   const getMainImageUrl = (product) => {
     if (product?.images && product.images.length > 0) return product.images[0].url;
@@ -40,8 +42,15 @@ const AdminProducts = () => {
     try {
       setLoading(true);
       const res = await api.get(`/admin/products/?page=${page}&search=${searchTerm}`);
-      if (Array.isArray(res.data)) setProducts(res.data);
-      else if (res.data.results) setProducts(res.data.results);
+      if (Array.isArray(res.data)) {
+         setProducts(res.data);
+         // Extract existing categories from DB to update list
+         const existingCats = [...new Set(res.data.map(p => p.category))];
+         setCategories(prev => [...new Set([...prev, ...existingCats])]);
+      }
+      else if (res.data.results) {
+         setProducts(res.data.results);
+      }
       else setProducts([]);
     } catch (error) { toast.error("Failed to load products"); }
     finally { setLoading(false); }
@@ -58,6 +67,7 @@ const AdminProducts = () => {
   };
 
   const openModal = (product = null) => {
+    setIsCustomCategory(false); // Reset category mode
     if (product) {
       setEditingProduct(product);
       setFormData({
@@ -68,6 +78,11 @@ const AdminProducts = () => {
         category: product.category || "",
         isActive: product.is_active ?? true 
       });
+
+      // If category is not in list, add it temporarily
+      if (product.category && !categories.includes(product.category)) {
+          setCategories(prev => [...prev, product.category]);
+      }
 
       const existing = (product.images || []).map(img => ({
         type: 'existing',
@@ -128,6 +143,12 @@ const AdminProducts = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ✅ Add new category to local list if it's custom
+    if (isCustomCategory && formData.category && !categories.includes(formData.category)) {
+        setCategories(prev => [...prev, formData.category]);
+    }
+
     const data = new FormData();
     data.append('name', formData.name);
     data.append('description', formData.description);
@@ -339,15 +360,44 @@ const AdminProducts = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    
+                    {/* ✅ UPDATED CATEGORY SECTION */}
                     <div className="space-y-1">
-                      <label className="text-xs text-[#708d81] font-bold uppercase tracking-wider ml-1">Category</label>
-                      <select name="category" required value={formData.category} onChange={handleInputChange} className="w-full bg-[#001427] border border-[#708d81]/30 p-4 rounded-xl text-white outline-none focus:border-[#f4d58d] transition-all appearance-none cursor-pointer">
-                        <option value="">Select Category</option>
-                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                      </select>
+                      <div className="flex justify-between items-center pr-1">
+                        <label className="text-xs text-[#708d81] font-bold uppercase tracking-wider ml-1">Category</label>
+                        <button 
+                            type="button" 
+                            onClick={() => { setIsCustomCategory(!isCustomCategory); setFormData(prev => ({ ...prev, category: "" })); }} 
+                            className="text-[10px] text-[#f4d58d] hover:underline flex items-center gap-1"
+                        >
+                            {isCustomCategory ? "Select Existing" : "+ Add New Category"}
+                        </button>
+                      </div>
+                      
+                      {isCustomCategory ? (
+                        <input 
+                            name="category" 
+                            placeholder="Type new category name..." 
+                            required 
+                            value={formData.category} 
+                            onChange={handleInputChange} 
+                            className="w-full bg-[#001427] border border-[#f4d58d] p-4 rounded-xl text-white outline-none focus:ring-1 focus:ring-[#f4d58d]/50 transition-all placeholder:text-gray-500" 
+                        />
+                      ) : (
+                        <select 
+                            name="category" 
+                            required 
+                            value={formData.category} 
+                            onChange={handleInputChange} 
+                            className="w-full bg-[#001427] border border-[#708d81]/30 p-4 rounded-xl text-white outline-none focus:border-[#f4d58d] transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="">Select Category</option>
+                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      )}
                     </div>
 
-                    {/* ✅ VISIBILITY TOGGLE (Better UI) */}
+                    {/* ✅ VISIBILITY TOGGLE */}
                     <div className="space-y-1">
                       <label className="text-xs text-[#708d81] font-bold uppercase tracking-wider ml-1">Visibility</label>
                       <label className={`flex items-center justify-between w-full p-3.5 rounded-xl border cursor-pointer transition-all ${formData.isActive ? 'bg-green-500/10 border-green-500/50' : 'bg-red-500/10 border-red-500/50'}`}>
@@ -417,14 +467,14 @@ const AdminProducts = () => {
                   <span className="text-gray-500 mb-1.5 text-sm font-medium">INR</span>
                 </div>
                 <div className="pt-6 border-t border-[#708d81]/20 grid grid-cols-2 gap-4">
-                   <div className="bg-[#001427] p-4 rounded-xl border border-[#708d81]/20">
+                    <div className="bg-[#001427] p-4 rounded-xl border border-[#708d81]/20">
                       <p className="text-xs text-gray-500 uppercase font-bold">Stock Level</p>
                       <p className={`text-xl font-bold ${selectedProduct.count < 5 ? 'text-red-400' : 'text-white'}`}>{selectedProduct.count} units</p>
-                   </div>
-                   <div className="bg-[#001427] p-4 rounded-xl border border-[#708d81]/20">
+                    </div>
+                    <div className="bg-[#001427] p-4 rounded-xl border border-[#708d81]/20">
                       <p className="text-xs text-gray-500 uppercase font-bold">Images</p>
                       <p className="text-xl font-bold text-white">{selectedProduct.images?.length || 0} files</p>
-                   </div>
+                    </div>
                 </div>
               </div>
             </motion.div>
