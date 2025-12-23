@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiLoader, FiArrowLeft } from "react-icons/fi"; // ✅ Added FiArrowLeft
 import { useGoogleLogin } from '@react-oauth/google';
 import { FcGoogle } from "react-icons/fc";
 
@@ -30,22 +30,19 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // ✅ FIX: Admin Redirection Logic Logic Here
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // 1. Call API and WAIT for userData response
       const userData = await loginUserWithAPI(form, null, toast);
 
-      // 2. Check Role & Redirect
       if (userData) {
         if (userData.is_superuser || userData.role === 'admin') {
           console.log("Redirecting to Admin...");
-          navigate("/admin"); // 👑 Go to Admin Dashboard
+          navigate("/admin"); 
         } else {
           console.log("Redirecting to Home...");
-          navigate("/"); // 🛒 Go to User Home
+          navigate("/"); 
         }
       }
 
@@ -58,7 +55,7 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex items-center justify-center p-4 relative" // ✅ Added 'relative'
       style={{
         backgroundImage: "url('https://www.apple.com/v/airpods-max/i/images/overview/product-stories/anc/anc_airpod_max_lifestyle__duzobvqwpz42_large_2x.jpg')",
         backgroundSize: "cover",
@@ -66,6 +63,14 @@ const Login = () => {
         backgroundAttachment: "fixed",
       }}
     >
+      {/* 👇 BACK TO HOME BUTTON ADDED HERE */}
+      <Link 
+        to="/" 
+        className="absolute top-6 left-6 flex items-center gap-2 text-[#f4d58d] font-bold hover:text-white transition-colors z-10 bg-black/20 px-4 py-2 rounded-full backdrop-blur-sm"
+      >
+        <FiArrowLeft size={20} /> Back to Home
+      </Link>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -124,7 +129,6 @@ const Login = () => {
               </button>
             </div>
 
-            {/* Forgot Password Link */}
             <div className="flex justify-end mt-2">
               <Link
                 to="/forgot-password"
@@ -159,7 +163,6 @@ const Login = () => {
             )}
           </motion.button>
 
-          {/* --- GOOGLE LOGIN --- */}
           <div className="mt-4 flex flex-col gap-4">
             <div className="relative flex items-center justify-center">
               <div className="border-t border-white/20 w-full"></div>

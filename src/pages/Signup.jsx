@@ -1,9 +1,9 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // ✅ Added Link
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FiEye, FiEyeOff, FiLoader } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiLoader, FiArrowLeft } from "react-icons/fi"; // ✅ Added FiArrowLeft
 
 const Signup = () => {
   const { signupUser } = useContext(AuthContext);
@@ -32,24 +32,15 @@ const Signup = () => {
 
       if (error.response && error.response.data) {
         const errData = error.response.data;
-
-        // Check inside 'detail' if it exists
         const actualErrors = errData.detail || errData;
 
-        // 1. Email Error
         if (actualErrors.email) {
           toast.error(actualErrors.email[0]);
-        }
-        // 2. Username Error
-        else if (actualErrors.username) {
+        } else if (actualErrors.username) {
           toast.error(actualErrors.username[0]);
-        }
-        // 3. Password Error
-        else if (actualErrors.password) {
+        } else if (actualErrors.password) {
           toast.error(actualErrors.password[0]);
-        }
-        // 4. Other Errors (Generic)
-        else {
+        } else {
           if (errData.error) {
             toast.error(errData.error);
           } else {
@@ -68,15 +59,23 @@ const Signup = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex items-center justify-center p-4 relative" // ✅ Added 'relative'
       style={{
         backgroundImage: "url('https://www.apple.com/v/airpods-max/i/images/overview/product-stories/anc/anc_airpod_max_lifestyle__duzobvqwpz42_large_2x.jpg')",
         backgroundPosition: "center",
-        backgroundSize: "cover",       // ✅ Fix: Covers the screen properly
-        backgroundRepeat: "no-repeat", // ✅ Fix: Prevents tiling
-        backgroundAttachment: "fixed", // ✅ Fix: Parallax effect
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
       }}
     >
+      {/* 👇 BACK TO HOME BUTTON ADDED HERE */}
+      <Link 
+        to="/" 
+        className="absolute top-6 left-6 flex items-center gap-2 text-[#f4d58d] font-bold hover:text-white transition-colors z-10 bg-black/20 px-4 py-2 rounded-full backdrop-blur-sm"
+      >
+        <FiArrowLeft size={20} /> Back to Home
+      </Link>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
