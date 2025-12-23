@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // useNavigate import cheyyuka
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom"; // ✅ 1. Added Navigate
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
 import { FiShoppingBag, FiPackage, FiCheck } from "react-icons/fi";
@@ -11,28 +11,28 @@ const Success = () => {
 
   // Order ID സുരക്ഷിതമായി എടുക്കുന്നു
   const orderId = location.state?.orderId || "PENDING";
-  const isValidAccess = location.state?.fromCheckout;
+
+  // ✅ 2. Check for 'fromPayment' (preferred) or 'fromCheckout'
+  // നിങ്ങൾ Checkout പേജിൽ നിന്ന് 'fromPayment: true' എന്നാണ് അയക്കുന്നതെങ്കിൽ ഇത് വർക്ക് ആകും.
+  const isValidAccess = location.state?.fromPayment || location.state?.fromCheckout;
 
   useEffect(() => {
     // വിൻഡോ റീസൈസ് ചെയ്യുമ്പോൾ കോൺഫെറ്റി ശരിയാക്കാൻ
     const handleResize = () => setWindowDimension({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", handleResize);
-    
+
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 🛑 സെക്യൂരിറ്റി ചെക്ക് (Optional): 
-  // ഇത് കമന്റ് ചെയ്ത് വെക്കുന്നതാണ് നല്ലത്, കാരണം ചിലപ്പോൾ Razorpay Redirect ചെയ്യുമ്പോൾ State നഷ്ടപ്പെട്ടേക്കാം.
-  /* useEffect(() => {
-    if (!isValidAccess) {
-       navigate("/");
-    }
-  }, [isValidAccess, navigate]);
-  */
+  // ✅ 3. SECURITY CHECK:
+  // പേയ്മെന്റ് കഴിയാതെ ആരെങ്കിലും URL അടിച്ച് വന്നാൽ അവരെ ഹോം പേജിലേക്ക് വിടും.
+  if (!isValidAccess) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="relative min-h-screen bg-[#001427] flex items-center justify-center px-4 overflow-hidden">
-      
+
       {/* Confetti Animation */}
       <Confetti width={windowDimension.width} height={windowDimension.height} numberOfPieces={200} recycle={false} gravity={0.2} />
 

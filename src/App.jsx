@@ -64,23 +64,28 @@ const App = () => {
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetails />} />
 
-              {/* Private Routes (Logged in users only) */}
+              {/* Private Routes (Navbar ഉള്ളവ) */}
               <Route element={<PrivateRoute />}>
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/success" element={<Success />} />
+                {/* ❌ Success Removed from here */}
               </Route>
 
-              {/* 404 Page (Shows Navbar) */}
+              {/* 404 Page (ഇതിൽ Navbar വേണം) */}
               <Route path="*" element={<NotFound />} />
             </Route>
 
-            {/* 🔓 PUBLIC ROUTES (NO NAVBAR & NO FOOTER) */}
-            {/* Moved outside UserLayout so Navbar/Footer won't show */}
+            {/* 🛑 NO NAVBAR / NO FOOTER PAGES (Private) */}
+            <Route element={<PrivateRoute />}>
+              {/* Checkout & Success Pages without Navbar */}
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/success" element={<Success />} />
+            </Route>
+
+            {/* 🔓 PUBLIC ROUTES (NO NAVBAR / NO FOOTER) */}
             <Route element={<PublicRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />

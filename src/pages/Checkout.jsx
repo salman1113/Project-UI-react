@@ -1,10 +1,10 @@
 import { useContext, useEffect, useState } from "react";
 import { CartContext } from "../context/CartContext";
 import { AuthContext, useAxios } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // ✅ useNavigate already imported
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FaCreditCard, FaMoneyBillWave, FaMapMarkerAlt, FaPlus } from "react-icons/fa";
+import { FaCreditCard, FaMoneyBillWave, FaMapMarkerAlt, FaPlus, FaArrowLeft } from "react-icons/fa"; // ✅ Added FaArrowLeft
 
 const Checkout = () => {
   const { user } = useContext(AuthContext);
@@ -25,18 +25,17 @@ const Checkout = () => {
     name: "", phone: "", street: "", city: "", state: "", zip_code: "", is_default: false
   });
 
-  // 1. PROTECTION: CHECK USER & EMPTY CART (FIXED 🛠️)
+  // 1. PROTECTION: CHECK USER & EMPTY CART
   useEffect(() => {
     if (!user) {
       toast.warn("Please login to checkout");
       navigate("/login");
-    } else if (cart.length === 0 && !loading) { 
-      // ⚠️ മാറ്റം ഇവിടെ: loading നടക്കുന്ന സമയത്താണെങ്കിൽ Redirect ചെയ്യരുത്
+    } else if (cart.length === 0 && !loading) {
       navigate("/products", { replace: true });
     } else {
       fetchAddresses();
     }
-  }, [user, cart, navigate, loading]); // loading dependency ചേർത്തു
+  }, [user, cart, navigate, loading]);
 
   const fetchAddresses = async () => {
     try {
@@ -82,7 +81,7 @@ const Checkout = () => {
     });
   };
 
-  // 4. Handle Online Payment (Razorpay Logic) - FIXED 🛠️
+  // 4. Handle Online Payment (Razorpay Logic)
   const handleOnlinePayment = async (orderId, amount) => {
     const isLoaded = await loadRazorpay();
     if (!isLoaded) {
@@ -114,22 +113,18 @@ const Checkout = () => {
               order_id: orderId
             });
 
-            // ⚠️ Loading FALSE ആക്കരുത്. Success Page വരുന്നത് വരെ Processing കാണിക്കണം.
-            // setLoading(false); <--- ഇത് ഒഴിവാക്കി
-
             toast.success("Payment Successful!");
-            clearCart(); // കാർട്ട് ക്ലിയർ ചെയ്താലും products പേജിലേക്ക് പോകില്ല (useEffect fix കാരണം)
+            clearCart();
 
-            // Direct Navigation (No delay needed if loading stays true)
             navigate("/success", {
-                state: { fromCheckout: true, orderId: orderId },
-                replace: true
+              state: { fromCheckout: true, orderId: orderId },
+              replace: true
             });
 
           } catch (err) {
             console.error(err);
             toast.error("Payment Verification Failed");
-            setLoading(false); // Error വന്നാൽ മാത്രം Loading മാറ്റുക
+            setLoading(false);
             navigate("/orders");
           }
         },
@@ -161,7 +156,7 @@ const Checkout = () => {
     }
   };
 
-  // 5. Final Submit Logic - FIXED 🛠️
+  // 5. Final Submit Logic
   const handleSubmit = async () => {
     if (!selectedAddressId) {
       toast.warn("Please select a shipping address");
@@ -189,12 +184,8 @@ const Checkout = () => {
       if (paymentMethod === "online") {
         await handleOnlinePayment(res.data.order_id, finalTotal);
       } else {
-        // COD SUCCESS
         toast.success("Order placed successfully!");
         clearCart();
-        
-        // ⚠️ Loading മാറ്റരുത്. Success Page വരുന്നത് വരെ കാത്തിരിക്കുക.
-        // setLoading(false); <--- ഇത് ഒഴിവാക്കി
 
         navigate("/success", {
           state: { fromCheckout: true, orderId: res.data.order_id },
@@ -209,7 +200,7 @@ const Checkout = () => {
       } else {
         toast.error("Something went wrong. Please try again.");
       }
-      setLoading(false); // Error വന്നാൽ മാത്രം Loading മാറ്റുക
+      setLoading(false);
     }
   };
 
@@ -221,7 +212,15 @@ const Checkout = () => {
     if (currentStep < 3) setCurrentStep(currentStep + 1);
   };
 
-  const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
+  // ✅ UPDATED PREV STEP LOGIC:
+  // Step 1 ആണെങ്കിൽ Cart-ലേക്ക് പോകും. അല്ലെങ്കിൽ പഴയ സ്റ്റെപ്പിലേക്ക്.
+  const prevStep = () => {
+    if (currentStep === 1) {
+      navigate("/cart"); // 🛒 Back to Cart
+    } else {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   if (!user) return null;
 
@@ -385,11 +384,15 @@ const Checkout = () => {
         {/* --- NAVIGATION BUTTONS --- */}
         <div className="flex justify-between mt-8 pt-6 border-t border-[#708d81]/20">
           <button
-            disabled={currentStep === 1}
-            onClick={prevStep}
-            className={`px-6 py-3 rounded-lg border border-[#708d81] font-medium transition ${currentStep === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[#708d81]/20 text-[#f4d58d]'}`}
+            onClick={prevStep} // ✅ Updated Logic
+            className="flex items-center gap-2 px-6 py-3 rounded-lg border border-[#708d81] font-medium transition hover:bg-[#708d81]/20 text-[#f4d58d]"
           >
-            Back
+            {/* Step 1 ആണെങ്കിൽ "Back to Cart" എന്ന് കാണിക്കും */}
+            {currentStep === 1 ? (
+              <><FaArrowLeft /> Back to Cart</>
+            ) : (
+              "Back"
+            )}
           </button>
 
           {currentStep < 3 ? (
