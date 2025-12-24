@@ -38,7 +38,7 @@ const Products = () => {
         if (category !== "All") params.category = category;
         if (sort) params.ordering = sort;
 
-        const productRes = await axios.get("http://3.26.180.53/api/products/", { params });
+        const productRes = await axios.get("/api/products/", { params });
 
         let fetchedProducts = [];
         if (productRes.data.results) {

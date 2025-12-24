@@ -24,7 +24,7 @@ const ProductDetails = () => {
   // --- FETCH PRODUCT ---
   useEffect(() => {
     axios
-      .get(`http://3.26.180.53/api/products/${id}/`)
+      .get(`/api/products/${id}/`)
       .then((res) => setProduct(res.data))
       .catch((err) => {
         console.error("Fetch Details Error:", err);
