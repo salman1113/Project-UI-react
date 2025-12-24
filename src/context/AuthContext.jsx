@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
       // മാറ്റം 2: callback_url ആഡ് ചെയ്തു (ഇത് Backend-മായി മാച്ച് ആവണം).
       const res = await axios.post(`${API_URL}/auth/google/`, {
         code: response.code,
-        callback_url: "https://project-ui-react.vercel.app"
+        callback_url: "https://project-ui-react.vercel.app/"
       });
 
       const data = res.data;
