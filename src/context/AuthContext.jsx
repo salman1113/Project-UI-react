@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 // Base URL for your Django Backend
-const API_URL = "http://localhost:8000/api";
+const API_URL = "http://3.26.180.53/api";
 
 export const AuthContext = createContext();
 

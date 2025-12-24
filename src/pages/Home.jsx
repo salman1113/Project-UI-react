@@ -152,13 +152,13 @@ const FeaturedProducts = () => {
     if (product.images && product.images.length > 0) {
       const firstImage = product.images[0].url;
       if (firstImage.startsWith("http")) return firstImage;
-      return `http://localhost:8000${firstImage}`;
+      return `http://3.26.180.53${firstImage}`;
     }
 
     // 2. Check 'image' field
     if (product.image) {
       if (product.image.startsWith("http")) return product.image;
-      return `http://localhost:8000${product.image}`;
+      return `http://3.26.180.53${product.image}`;
     }
 
     // 3. Fallback
@@ -168,7 +168,7 @@ const FeaturedProducts = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/products/');
+        const response = await axios.get('http://3.26.180.53/api/products/');
         let data = response.data;
 
         if (data.results) {
