@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }) => {
       toast.success("Signup successful! Please login.");
       navigate("/login");
     } catch (err) {
-      throw err; 
+      throw err;
     }
   }, []);
 
@@ -121,10 +121,16 @@ export const AuthProvider = ({ children }) => {
     }
   }, [loginUser]);
 
-  // --- GOOGLE LOGIN ---
+  // --- GOOGLE LOGIN (UPDATED) ---
   const googleLogin = useCallback(async (response, navigate, toast) => {
     try {
-      const res = await axios.post(`${API_URL}/auth/google/`, { code: response.code });
+      // മാറ്റം 1: ലിങ്കിന്റെ അവസാനം സ്ലാഷ് (/) ഇട്ടു.
+      // മാറ്റം 2: callback_url ആഡ് ചെയ്തു (ഇത് Backend-മായി മാച്ച് ആവണം).
+      const res = await axios.post(`${API_URL}/auth/google/`, {
+        code: response.code,
+        callback_url: "https://project-ui-react.vercel.app"
+      });
+
       const data = res.data;
       const access = data.access_token || data.access || data.key;
       const refresh = data.refresh_token || data.refresh || "";
@@ -146,6 +152,7 @@ export const AuthProvider = ({ children }) => {
         } else {
           userData = { username: "Google User", role: "user" };
         }
+
         loginUser(userData, { access, refresh });
         toast.success("Google Login Successful!");
 
@@ -153,6 +160,7 @@ export const AuthProvider = ({ children }) => {
         else navigate("/");
       }
     } catch (err) {
+      console.error("Google Login Error:", err); // കൺസോളിൽ എറർ കാണാൻ
       if (err.response?.data?.non_field_errors) {
         toast.error(err.response.data.non_field_errors[0]);
       } else {
@@ -160,7 +168,7 @@ export const AuthProvider = ({ children }) => {
       }
     }
   }, [loginUser]);
-
+  
   // --- UPDATE PROFILE ---
   const updateProfile = useCallback(async (profileData) => {
     try {
