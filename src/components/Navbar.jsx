@@ -18,7 +18,7 @@ import {
   FiLoader,
   FiBell,
   FiInbox,
-  FiLayout // ✅ 1. Added FiLayout icon
+  FiLayout 
 } from "react-icons/fi";
 
 const Navbar = () => {

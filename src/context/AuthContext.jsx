@@ -124,8 +124,6 @@ export const AuthProvider = ({ children }) => {
   // --- GOOGLE LOGIN (UPDATED) ---
   const googleLogin = useCallback(async (response, navigate, toast) => {
     try {
-      // മാറ്റം 1: ലിങ്കിന്റെ അവസാനം സ്ലാഷ് (/) ഇട്ടു.
-      // മാറ്റം 2: callback_url ആഡ് ചെയ്തു (ഇത് Backend-മായി മാച്ച് ആവണം).
       const res = await axios.post(`${API_URL}/auth/google/`, {
         code: response.code,
         callback_url: "https://project-ui-react.vercel.app"
@@ -160,7 +158,7 @@ export const AuthProvider = ({ children }) => {
         else navigate("/");
       }
     } catch (err) {
-      console.error("Google Login Error:", err); // കൺസോളിൽ എറർ കാണാൻ
+      console.error("Google Login Error:", err); 
       if (err.response?.data?.non_field_errors) {
         toast.error(err.response.data.non_field_errors[0]);
       } else {
